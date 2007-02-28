@@ -45,6 +45,11 @@
       // variables for the mini map
       var miniMapWidth  = [% mini_map_width %];
       var miniMapHeight = [% mini_map_height %];
+
+      var magnifier = {
+        f_dragging: false
+      }
+
       var magnifierDragging = false;
       var magnifierTop;
       var magnifierLeft;

@@ -1,11 +1,13 @@
 package AjaxMapMaker;
 
+# Written by Lambert Lum (emceelam@warpmail.net)
+
 use strict;
 use Imager;
 use Image::Info qw(image_info dim);
 use Template;
 use Readonly;
-use Data::Dumper;
+#use Data::Dumper;
 
 Readonly my $tile_width  => 100;
 Readonly my $tile_height => 100;
@@ -16,7 +18,7 @@ Readonly my $mini_map_name => "mini_map.png";
 sub new {
   my ($class_name, $pdf_name) = @_;
 
-  my ($base_name) = $pdf_name =~ /(.*)\.pdf$/;
+  my ($base_name) = $pdf_name =~ m{(?:.*/)(.*)\.pdf$};
   my $tiles_subdir = "tiles";
   my $self = {
     pdf_name => $pdf_name,
@@ -34,7 +36,7 @@ sub pdf_to_png {
   my $base_dir = $self->{base_dir};
   my $file_base = $self->{base_name};
   my $rendered_dir = $self->{rendered_dir};
-  my $file_name = $self->{pdf_name};
+  my $pdf_name = $self->{pdf_name};
   my $error;
   my $info;
 
@@ -43,11 +45,11 @@ sub pdf_to_png {
   # render at different resolutions
   my @dpiResolutions = qw(72 100 200 300);
   foreach my $dpi (@dpiResolutions) {
-    system ("gs -q -dSAFER -dBATCH -dNOPAUSE " . 
+    system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " . 
               "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
               "-dFirstPage=1 -dLastPage=1 " .
               "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE -r$dpi " .
-              "-sOutputFile=$rendered_dir/$file_base.png $file_base.pdf");
+              "-sOutputFile=$rendered_dir/$file_base.png $pdf_name");
     $info = image_info ("$rendered_dir/$file_base.png");
     if ($error = $info->{error}) {
       die "Can't parse image info: $error\n";
@@ -55,6 +57,7 @@ sub pdf_to_png {
     my ($width, $height) = dim ($info);
     my $dest_file_name = "${file_base}_w${width}_h${height}_dpi${dpi}.png";
     rename "$rendered_dir/$file_base.png", "$rendered_dir/$dest_file_name";
+    print "rendered $dest_file_name\n";
     push @image_file_names, $dest_file_name;
   }
 
@@ -88,15 +91,23 @@ sub tile_image {
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr;
 
-  for (my $x=0; $x < $img_width; $x += $tile_width) {
-    for (my $y = 0; $y < $img_height; $y += $tile_height) {
+  my $tile_cnt = 0;
+  my $max_y = $img_height / $tile_height;
+  my $max_x = $img_width  / $tile_width;
+  for   (my $y=0; $y < $max_y; $y++) {
+    for (my $x=0; $x < $max_x;  $x++) {
       my $tile_img = $img->crop (left=>$x, top=>$y, 
                                 width=> $tile_width, height => $tile_height);
-      $tile_img->write (
-        file => ("$tiles_dir/${base_name}_x" . $x/100 . "y" . $y/100 ."z$z.png"))
+      my $tile_name =
+        "$tiles_dir/${base_name}_x" . $x . "y" . $y ."z$z.png";
+      $tile_img->write (file => $tile_name)
         || die "Cannot write tile $x,$y: ". $tile_img->errstr();
+      $tile_cnt++;
     }
+    print "Finished row $y. Tiles written so far: $tile_cnt\n"
+      if ($y & 0x1) == 0;   # even rows only
   }
+  print "Total tiles written: $tile_cnt\n";
 }
 
 sub generate_javascript {
