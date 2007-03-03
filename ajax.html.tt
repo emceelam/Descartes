@@ -93,8 +93,8 @@
         var innerDiv = document.getElementById("innerDiv");
         innerDiv.style.cursor = "-moz-grab";
 
-        top = stripPx(innerDiv.style.top);
-        left = stripPx(innerDiv.style.left);
+        top = atoi(innerDiv.style.top);
+        left = atoi(innerDiv.style.left);
 
         dragging = true;
         return false;
@@ -110,16 +110,16 @@
         var magnifierDiv = document.getElementById("magnifier");
         magnifierDiv.style.cursor = "-moz-grab";
 
-        magnifierTop  = stripPx(magnifierDiv.style.top);
-        magnifierLeft = stripPx(magnifierDiv.style.left);
+        magnifierTop  = atoi(magnifierDiv.style.top);
+        magnifierLeft = atoi(magnifierDiv.style.left);
 
         magnifierDragging = true;
         return false;
       }
 
       function processMove(event) {
-        var zoomWidth  = parseIntNoNaN(zoomSizes[zoom][0]);
-        var zoomHeight = parseIntNoNaN(zoomSizes[zoom][1]);
+        var zoomWidth  = atoi(zoomSizes[zoom][0]);
+        var zoomHeight = atoi(zoomSizes[zoom][1]);
         var maxY = 0;
         var minY = -(zoomHeight - viewPortHeight);
         var maxX = 0;
@@ -152,9 +152,9 @@
         var magnifierDiv = document.getElementById("magnifier");
 
         var maxX = 0;
-        var minX = [% mini_map_width %] - parseIntNoNaN(magnifierDiv.style.width);
+        var minX = [% mini_map_width %] - atoi(magnifierDiv.style.width);
         var maxY = 0;
-        var minY = [% mini_map_height %] - parseIntNoNaN(magnifierDiv.style.height);
+        var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
 
         if (!event) event = window.event;  // for IE
         if (magnifierDragging) {
@@ -215,8 +215,8 @@
 
       function getVisibleTiles() {
         var innerDiv = document.getElementById("innerDiv");
-        var mapX = stripPx(innerDiv.style.left);
-        var mapY = stripPx(innerDiv.style.top);
+        var mapX = atoi(innerDiv.style.left);
+        var mapY = atoi(innerDiv.style.top);
 
         var startX = Math.abs(Math.floor(mapX / tileSize)) - 1;
         if (startX < 0) startX = 0;
@@ -254,12 +254,7 @@
         magnifierStopMove();
       }
 
-      function stripPx (value) {
-        if (value == "") return 0;
-        return parseFloat (value.substring(0, value.length-2));
-      }
-
-      function parseIntNoNaN (s) {
+      function atoi (s) {
         var val = parseInt(s);
         return (isNaN(val)) ? 0 : val;
       }
@@ -277,10 +272,10 @@
 
       function setMagnifier () {
         var innerDiv = document.getElementById("innerDiv");
-        var innerDivWidth  = parseIntNoNaN(innerDiv.style.width);
-        var innerDivHeight = parseIntNoNaN(innerDiv.style.height);
-        var innerDivLeft   = parseIntNoNaN(innerDiv.style.left);
-        var innerDivTop    = parseIntNoNaN(innerDiv.style.top);
+        var innerDivWidth  = atoi(innerDiv.style.width);
+        var innerDivHeight = atoi(innerDiv.style.height);
+        var innerDivLeft   = atoi(innerDiv.style.left);
+        var innerDivTop    = atoi(innerDiv.style.top);
         magnifierLeft
           = Math.round(Math.abs(innerDivLeft) * miniMapWidth  / innerDivWidth);
           // global
@@ -306,12 +301,12 @@
       {
         var magDiv   = document.getElementById("magnifier");
         var innerDiv = document.getElementById("innerDiv");
-        var magLeft        = parseIntNoNaN(magDiv.style.left);
-        var magTop         = parseIntNoNaN(magDiv.style.top);
-        var magWidth       = parseIntNoNaN(magDiv.style.width);
-        var magHeight      = parseIntNoNaN(magDiv.style.height);
-        var innerDivWidth  = parseIntNoNaN(innerDiv.style.width);
-        var innerDivHeight = parseIntNoNaN(innerDiv.style.height);
+        var magLeft        = atoi(magDiv.style.left);
+        var magTop         = atoi(magDiv.style.top);
+        var magWidth       = atoi(magDiv.style.width);
+        var magHeight      = atoi(magDiv.style.height);
+        var innerDivWidth  = atoi(innerDiv.style.width);
+        var innerDivHeight = atoi(innerDiv.style.height);
 
         var innerDivLeft = (-magLeft) * innerDivWidth  / [% mini_map_width  %];
         var innerDivTop  = (-magTop)  * innerDivHeight / [% mini_map_height %];
@@ -326,7 +321,7 @@
         innerDiv.style.width  = width;
         innerDiv.style.height = height;
         setMagnifier();
-        setMagnifierSize (parseIntNoNaN(width), parseIntNoNaN(height));
+        setMagnifierSize (atoi(width), atoi(height));
       }
 
       function setZoom (zoomLevel)
@@ -339,12 +334,12 @@
           innerDiv.removeChild(imgs[0]);
         }
 
-        var oldLeft   = parseIntNoNaN(innerDiv.style.left);
-        var oldTop    = parseIntNoNaN(innerDiv.style.top);
-        var oldWidth  = parseIntNoNaN(zoomSizes[zoom][0]);
-        var oldHeight = parseIntNoNaN(zoomSizes[zoom][1]);
-        var newWidth  = parseIntNoNaN(zoomSizes[zoomLevel][0]);
-        var newHeight = parseIntNoNaN(zoomSizes[zoomLevel][1]);
+        var oldLeft   = atoi(innerDiv.style.left);
+        var oldTop    = atoi(innerDiv.style.top);
+        var oldWidth  = atoi(zoomSizes[zoom][0]);
+        var oldHeight = atoi(zoomSizes[zoom][1]);
+        var newWidth  = atoi(zoomSizes[zoomLevel][0]);
+        var newHeight = atoi(zoomSizes[zoomLevel][1]);
 
         var newLeft = Math.round(newWidth  * oldLeft / oldWidth);
         var newTop  = Math.round(newHeight * oldTop  / oldHeight);

@@ -18,7 +18,7 @@ Readonly my $mini_map_name => "mini_map.png";
 sub new {
   my ($class_name, $pdf_name) = @_;
 
-  my ($base_name) = $pdf_name =~ m{(?:.*/)(.*)\.pdf$};
+  my ($base_name) = $pdf_name =~ m{(?:.*/)?(.*)\.pdf$};
   my $tiles_subdir = "tiles";
   my $self = {
     pdf_name => $pdf_name,
@@ -96,8 +96,9 @@ sub tile_image {
   my $max_x = $img_width  / $tile_width;
   for   (my $y=0; $y < $max_y; $y++) {
     for (my $x=0; $x < $max_x;  $x++) {
-      my $tile_img = $img->crop (left=>$x, top=>$y, 
-                                width=> $tile_width, height => $tile_height);
+      my $tile_img = $img->crop (
+                       left => $x * $tile_width, top => $y * $tile_height,
+                       width=> $tile_width, height => $tile_height);
       my $tile_name =
         "$tiles_dir/${base_name}_x" . $x . "y" . $y ."z$z.png";
       $tile_img->write (file => $tile_name)
@@ -132,7 +133,7 @@ sub generate_javascript {
 
   my $tt = Template->new ();
   $tt->process(
-        'ajax.xhtml.tt',
+        'ajax.html.tt',
         {
           file_base => $self->{base_name},
           tiles_subdir => $self->{tiles_subdir},
@@ -142,7 +143,7 @@ sub generate_javascript {
           mini_map_width  => $mini_map_width,
           mini_map_height => $mini_map_height,
         },
-        "$base_dir/ajax.xhtml"
+        "$base_dir/ajax.html"
   ) || die $tt->error(), "\n";
 }
 
