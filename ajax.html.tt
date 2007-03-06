@@ -30,7 +30,7 @@
       var tileSize = 100;
 
       // variables for the map div
-      var dragging = false;
+      var f_dragging = false;
       var top;
       var left;
       var dragStartTop;
@@ -38,7 +38,7 @@
       var zoom = 0;
       var zoomSizes = [
         [% FOREACH dim = dimensions -%]
-          [ "[% dim.width %]px", "[% dim.height %]px" ],
+          [ [% dim.width %], [% dim.height %] ],
         [% END -%]
       ];
 
@@ -50,7 +50,7 @@
         f_dragging: false
       }
 
-      var magnifierDragging = false;
+      var f_magnifierDragging = false;
       var magnifierTop;
       var magnifierLeft;
       var magnifierDragStartTop;
@@ -76,7 +76,7 @@
         magnifierDiv.ondragstart = function() { return false; }  // for IE
 
         var miniMapDiv = document.getElementById("miniMap");
-        miniMapDiv.onmousedown = magniferStartMove;
+        miniMapDiv.onmousedown = magnifierStartMove;
         miniMapDiv.onmousemove = magnifierProcessMove;
         miniMapDiv.onmouseup = magnifierStopMove;
         miniMapDiv.ondragstart = function() { return false; } // fore IE
@@ -93,12 +93,12 @@
         dragStartLeft = event.clientX;
         dragStartTop  = event.clientY;
         var innerDiv = document.getElementById("innerDiv");
-        innerDiv.style.cursor = "-moz-grab";
+        innerDiv.style.cursor = "move";
 
         top = atoi(innerDiv.style.top);
         left = atoi(innerDiv.style.left);
 
-        dragging = true;
+        f_dragging = true;
         return false;
       }
 
@@ -110,18 +110,18 @@
         magnifierDragStartLeft = event.clientX;
         magnifierDragStartTop  = event.clientY;
         var magnifierDiv = document.getElementById("magnifier");
-        magnifierDiv.style.cursor = "-moz-grab";
+        magnifierDiv.style.cursor = "move";
 
         magnifierTop  = atoi(magnifierDiv.style.top);
         magnifierLeft = atoi(magnifierDiv.style.left);
 
-        magnifierDragging = true;
+        f_magnifierDragging = true;
         return false;
       }
 
       function processMove(event) {
-        var zoomWidth  = atoi(zoomSizes[zoom][0]);
-        var zoomHeight = atoi(zoomSizes[zoom][1]);
+        var zoomWidth  = zoomSizes[zoom][0];
+        var zoomHeight = zoomSizes[zoom][1];
         var maxY = 0;
         var minY = -(zoomHeight - viewPortHeight);
         var maxX = 0;
@@ -129,7 +129,7 @@
 
         if (!event) event = window.event;  // for IE
         var innerDiv = document.getElementById("innerDiv");
-        if (dragging) {
+        if (f_dragging) {
           var shiftedTop = top + (event.clientY - dragStartTop);
           if (shiftedTop > maxY) shiftedTop = maxY;  // map is not infinite
           if (shiftedTop < minY) shiftedTop = minY;
@@ -159,7 +159,7 @@
         var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
 
         if (!event) event = window.event;  // for IE
-        if (magnifierDragging) {
+        if (f_magnifierDragging) {
           var shiftedLeft = magnifierLeft + (event.clientX - magnifierDragStartLeft);
           if (shiftedLeft < maxX) shiftedLeft = maxX; // map is not infinite
           if (shiftedLeft > minX) shiftedLeft = minX;
@@ -240,7 +240,7 @@
       function stopMove() {
         var innerDiv = document.getElementById("innerDiv");
         innerDiv.style.cursor = "";
-        dragging = false;
+        f_dragging = false;
 
         //alert ("left: " + innerDiv.style.left + ", top: " + innerDiv.style.top);
       }
@@ -248,7 +248,7 @@
       function magnifierStopMove() {
         var magnifierDiv = document.getElementById("magnifier");
         magnifierDiv.style.cursor = "";
-        magnifierDragging = false;
+        f_magnifierDragging = false;
       }
 
       function stopDragging () {
@@ -320,10 +320,10 @@
 
       function setInnerDivSize(width, height) {
         var innerDiv = document.getElementById("innerDiv");
-        innerDiv.style.width  = width;
-        innerDiv.style.height = height;
+        innerDiv.style.width  = width  + "px";
+        innerDiv.style.height = height + "px";
         setMagnifier();
-        setMagnifierSize (atoi(width), atoi(height));
+        setMagnifierSize (width, height);
       }
 
       function setZoom (zoomLevel)
@@ -338,10 +338,10 @@
 
         var oldLeft   = atoi(innerDiv.style.left);
         var oldTop    = atoi(innerDiv.style.top);
-        var oldWidth  = atoi(zoomSizes[zoom][0]);
-        var oldHeight = atoi(zoomSizes[zoom][1]);
-        var newWidth  = atoi(zoomSizes[zoomLevel][0]);
-        var newHeight = atoi(zoomSizes[zoomLevel][1]);
+        var oldWidth  = zoomSizes[zoom][0];
+        var oldHeight = zoomSizes[zoom][1];
+        var newWidth  = zoomSizes[zoomLevel][0];
+        var newHeight = zoomSizes[zoomLevel][1];
 
         var newLeft = Math.round(newWidth  * oldLeft / oldWidth);
         var newTop  = Math.round(newHeight * oldTop  / oldHeight);
@@ -349,7 +349,7 @@
         innerDiv.style.top  = newTop  + "px";
 
         zoom = zoomLevel;  // set the global zoom
-        setInnerDivSize (newWidth + "px", newHeight + "px");
+        setInnerDivSize (newWidth, newHeight);
         checkTiles();
       }
 
@@ -398,17 +398,3 @@
     </div>
   </body>
 </html>
-
-[% BLOCK node_type_const %]
-  // mnemonic names for DOM node constants
-  if (!window.Node) {
-    var Node = {
-      ELEMENT_NODE:            1,
-      ATTRIBUTE_NODE:          2,
-      TEXT_NODE:               3,
-      COMMENT_NODE:            8,
-      DOCUMENT_NODE:           9,
-      DOCUMENT_FRAGMENT_NODE: 11
-    }
-  }
-[% END %]
