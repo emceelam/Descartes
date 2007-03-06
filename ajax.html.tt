@@ -11,7 +11,7 @@
     </title>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Script-Type" content="text/javascript" />
-    <style>
+    <style type="text/css">
       #outerDiv {
         width: [% view_port_width %]px; height: [% view_port_height %]px; 
         border: 1px solid black; position: relative;
@@ -76,8 +76,10 @@
         magnifierDiv.ondragstart = function() { return false; }  // for IE
 
         var miniMapDiv = document.getElementById("miniMap");
+        miniMapDiv.onmousedown = magniferStartMove;
         miniMapDiv.onmousemove = magnifierProcessMove;
         miniMapDiv.onmouseup = magnifierStopMove;
+        miniMapDiv.ondragstart = function() { return false; } // fore IE
 
         checkTiles();
         //alert ('hello world');
@@ -354,7 +356,7 @@
       //]]>
     </script>
   </head>
-  <body onload="init()" onblur="stopDragging()">
+  <body onload="init()">
     <h2>AJAX Map (Work in Progress)</h2>
     <div id="infoDiv">
       info div
@@ -367,7 +369,7 @@
         <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
         <div style="position:absolute;
                     top:[% (loop.index + 1) * 12 %]px; left:10px; z-index:1;
-                    width:20px; height:5px;
+                    width:20px; height:5px; font-size:10%;
                     border:solid 1px blue; background:#d6e7ee"
             onclick="setZoom([% loop.index %])">
         </div>
