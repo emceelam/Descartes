@@ -46,19 +46,9 @@
       var miniMapWidth  = [% mini_map_width %];
       var miniMapHeight = [% mini_map_height %];
 
-      var magnifier = {
-        f_dragging: false
-      }
-
-      var f_magnifierDragging = false;
-      var magnifierTop;
-      var magnifierLeft;
-      var magnifierDragStartTop;
-      var magnifierDragStartLeft;
+      var magnifier;
 
       function init() {
-        setInnerDivSize (zoomSizes[zoom][0], zoomSizes[zoom][1]);
-
         // main map
         var outerDiv = document.getElementById("outerDiv");
         outerDiv.onmousedown = startMove;
@@ -67,22 +57,33 @@
         //outerDiv.onmouseout = stopMove;
         outerDiv.ondragstart = function() { return false; }  // for IE
 
-        // mini map
-        var magnifierDiv = document.getElementById("magnifier");
-        magnifierDiv.onmousedown = magnifierStartMove;
-        magnifierDiv.onmousemove = magnifierProcessMove;
-        magnifierDiv.onmouseup = magnifierStopMove;
-        //magnifierDiv.onmouseout = magnifierStopMove;
-        magnifierDiv.ondragstart = function() { return false; }  // for IE
+        magnifier = new Magnifier();
 
         var miniMapDiv = document.getElementById("miniMap");
-        miniMapDiv.onmousedown = magnifierStartMove;
-        miniMapDiv.onmousemove = magnifierProcessMove;
-        miniMapDiv.onmouseup = magnifierStopMove;
-        miniMapDiv.ondragstart = function() { return false; } // fore IE
+        miniMapDiv.onmousedown
+          = function (event) { return magnifier.startMove(magnifier, event) };
+        miniMapDiv.onmousemove
+          = function (event) { return magnifier.processMove(magnifier, event) };
+        miniMapDiv.onmouseup
+          = function (event) { return magnifier.stopMove(magnifier, event) };
+        miniMapDiv.ondragstart = function() { return false; } // for IE
 
+        setInnerDivSize (zoomSizes[zoom][0], zoomSizes[zoom][1]);
         checkTiles();
         //alert ('hello world');
+      }
+
+      function Magnifier () {
+        var context = this;
+        this.f_dragging = false;
+        this.div = document.getElementById("magnifier");
+        this.div.ondragstart = function() { return false; }  // for IE
+        this.div.onmousedown
+          = function (event) { return context.startMove(context, event) };
+        this.div.onmousemove
+          = function (event) { return context.processMove(context, event) };
+        this.div.onmouseup
+          = function (event) { return context.stopMove(context, event) };
       }
 
       function startMove(event) {
@@ -102,20 +103,22 @@
         return false;
       }
 
-      function magnifierStartMove(event) {
+      Magnifier.prototype.startMove =
+      function (context, event) {
         // for IE
         if (!event)
           event = window.event;
 
-        magnifierDragStartLeft = event.clientX;
-        magnifierDragStartTop  = event.clientY;
-        var magnifierDiv = document.getElementById("magnifier");
+        //var magnifierDiv = document.getElementById("magnifier");
+        var magnifierDiv = context.div;
+        context.dragStartLeft = event.clientX;
+        context.dragStartTop  = event.clientY;
         magnifierDiv.style.cursor = "move";
 
-        magnifierTop  = atoi(magnifierDiv.style.top);
-        magnifierLeft = atoi(magnifierDiv.style.left);
+        context.top  = atoi(magnifierDiv.style.top);
+        context.left = atoi(magnifierDiv.style.left);
 
-        f_magnifierDragging = true;
+        context.f_dragging = true;
         return false;
       }
 
@@ -141,7 +144,7 @@
           innerDiv.style.left = shiftedLeft + "px";
 
           checkTiles();
-          setMagnifier();
+          magnifier.setPosition();
         }
 
         var infoDiv = document.getElementById("infoDiv");
@@ -150,22 +153,24 @@
             + "x:" + event.clientX + ", y:" + event.clientY;
       }
 
-      function magnifierProcessMove (event) {
-        var magnifierDiv = document.getElementById("magnifier");
-
-        var maxX = 0;
-        var minX = [% mini_map_width %] - atoi(magnifierDiv.style.width);
-        var maxY = 0;
-        var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
+      Magnifier.prototype.processMove = 
+      function (context, event) {
+        var magnifierDiv = context.div;
 
         if (!event) event = window.event;  // for IE
-        if (f_magnifierDragging) {
-          var shiftedLeft = magnifierLeft + (event.clientX - magnifierDragStartLeft);
+        if (context.f_dragging) {
+
+          var maxX = 0;
+          var minX = [% mini_map_width %]  - atoi(magnifierDiv.style.width);
+          var maxY = 0;
+          var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
+
+          var shiftedLeft = context.left + (event.clientX - context.dragStartLeft);
           if (shiftedLeft < maxX) shiftedLeft = maxX; // map is not infinite
           if (shiftedLeft > minX) shiftedLeft = minX;
           magnifierDiv.style.left = shiftedLeft + "px";
 
-          var shiftedTop = magnifierTop + (event.clientY - magnifierDragStartTop);
+          var shiftedTop = context.top + (event.clientY - context.dragStartTop);
           if (shiftedTop < maxY) shiftedTop = maxY; // map is not infinite
           if (shiftedTop > minY) shiftedTop = minY;
           magnifierDiv.style.top = shiftedTop + "px";
@@ -175,7 +180,8 @@
 
         var magnifierInfo = document.getElementById("magnifierInfo");
         magnifierInfo.innerHTML = 
-          "magnifer: (" + magnifierDiv.style.left + "," + magnifierDiv.style.top + ") "
+          "magnifier: (" 
+            + magnifierDiv.style.left + "," + magnifierDiv.style.top + ") "
           + "x:" + event.clientX + ", y:" + event.clientY;
       }
 
@@ -245,15 +251,10 @@
         //alert ("left: " + innerDiv.style.left + ", top: " + innerDiv.style.top);
       }
 
-      function magnifierStopMove() {
-        var magnifierDiv = document.getElementById("magnifier");
-        magnifierDiv.style.cursor = "";
-        f_magnifierDragging = false;
-      }
-
-      function stopDragging () {
-        stopMove();
-        magnifierStopMove();
+      Magnifier.prototype.stopMove =
+      function (context, event) {
+        context.div.style.cursor = "";
+        context.f_dragging = false;
       }
 
       function atoi (s) {
@@ -261,8 +262,8 @@
         return (isNaN(val)) ? 0 : val;
       }
 
-      function setMagnifierSize (innerDivWidth, innerDivHeight)
-      {
+      Magnifier.prototype.setSize =
+      function (innerDivWidth, innerDivHeight) {
         var magnifierWidth
           = Math.round([% view_port_width  * mini_map_width  %] / innerDivWidth);
         var magnifierHeight
@@ -272,30 +273,24 @@
         magnifierDiv.style.height = magnifierHeight + "px";
       }
 
-      function setMagnifier () {
+      Magnifier.prototype.setPosition =
+      function () {
         var innerDiv = document.getElementById("innerDiv");
         var innerDivWidth  = atoi(innerDiv.style.width);
         var innerDivHeight = atoi(innerDiv.style.height);
         var innerDivLeft   = atoi(innerDiv.style.left);
         var innerDivTop    = atoi(innerDiv.style.top);
-        magnifierLeft
+        this.left
           = Math.round(Math.abs(innerDivLeft) * miniMapWidth  / innerDivWidth);
           // global
-        magnifierTop
+        this.top
           = Math.round(Math.abs(innerDivTop)  * miniMapHeight / innerDivHeight);
           // global
 
         // alter magnifier
-        var magnifierDiv = document.getElementById("magnifier");
-        magnifierDiv.style.left   = magnifierLeft   + "px";
-        magnifierDiv.style.top    = magnifierTop    + "px";
-
-        //var magnifierInfo = document.getElementById("magnifierInfo");
-        //magnifierInfo.innerHTML =
-        // "magnifier (" + magnifierLeft + ',' + magnifierTop + ') '
-        // + "innerDivLeft:" + innerDivLeft + " "
-        // + "miniMapWidth:" + miniMapWidth + " "
-        // + "innerDivWidth:" + innerDivWidth;
+        var magnifierDiv = this.div;
+        magnifierDiv.style.left   = this.left   + "px";
+        magnifierDiv.style.top    = this.top    + "px";
       }
 
       // movement in the magnifier moves the main map
@@ -310,8 +305,10 @@
         var innerDivWidth  = atoi(innerDiv.style.width);
         var innerDivHeight = atoi(innerDiv.style.height);
 
-        var innerDivLeft = (-magLeft) * innerDivWidth  / [% mini_map_width  %];
-        var innerDivTop  = (-magTop)  * innerDivHeight / [% mini_map_height %];
+        var innerDivLeft
+          = Math.round((-magLeft) * innerDivWidth  / [% mini_map_width  %]);
+        var innerDivTop
+          = Math.round((-magTop)  * innerDivHeight / [% mini_map_height %]);
         innerDiv.style.left = innerDivLeft + "px";
         innerDiv.style.top  = innerDivTop  + "px";
 
@@ -322,8 +319,8 @@
         var innerDiv = document.getElementById("innerDiv");
         innerDiv.style.width  = width  + "px";
         innerDiv.style.height = height + "px";
-        setMagnifier();
-        setMagnifierSize (width, height);
+        magnifier.setPosition();
+        magnifier.setSize (width, height);
       }
 
       function setZoom (zoomLevel)
@@ -378,14 +375,14 @@
       </div>
     </div>
     <div style="position:absolute; left:550px; top:10px; 
-                border: solid black thin; ">
+                border: solid black 1px; ">
       <div id="miniMap">
         <img src="rendered/mini_map.png" alt="mini map" border="0"
           style="width:[% mini_map_width %]px; height:[% mini_map_height %]px;" />
       </div>
       <div id="magnifier"
         style="position:absolute; left:0px; top:0px; z-index:1; 
-               background:transparent; border: solid black thin;">
+               background:transparent; border: solid black 1px;">
       </div>
     </div>
     <div style="position:absolute; left:550px; top:300px; width:250px;
