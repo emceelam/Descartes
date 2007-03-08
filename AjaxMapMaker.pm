@@ -135,7 +135,7 @@ sub generate_javascript {
 
   my $tt = Template->new ();
   $tt->process(
-        'ajax.html.tt',
+        'index.html.tt',
         {
           file_base => $self->{base_name},
           tiles_subdir => $self->{tiles_subdir},
@@ -146,7 +146,7 @@ sub generate_javascript {
           mini_map_width  => $mini_map_width,
           mini_map_height => $mini_map_height,
         },
-        "$base_dir/ajax.html"
+        "$base_dir/index.html"
   ) || die $tt->error(), "\n";
 }
 
