@@ -7,10 +7,12 @@ use Imager;
 use Image::Info qw(image_info dim);
 use Template;
 use Readonly;
+use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
+use File::Find qw(find);
+use File::Copy qw(move);
 #use Data::Dumper;
 
-Readonly my $tile_width  => 100;
-Readonly my $tile_height => 100;
+Readonly my $tile_size => 256;
 Readonly my $mini_map_max_width  => 200;
 Readonly my $mini_map_max_height => 200;
 Readonly my $mini_map_name => "mini_map.png";
@@ -92,13 +94,13 @@ sub tile_image {
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr;
 
   my $tile_cnt = 0;
-  my $max_y = $img_height / $tile_height;
-  my $max_x = $img_width  / $tile_width;
+  my $max_y = $img_height / $tile_size;
+  my $max_x = $img_width  / $tile_size;
   for   (my $y=0; $y < $max_y; $y++) {
     for (my $x=0; $x < $max_x;  $x++) {
       my $tile_img = $img->crop (
-                       left => $x * $tile_width, top => $y * $tile_height,
-                       width=> $tile_width, height => $tile_height);
+                       left => $x * $tile_size, top => $y * $tile_size,
+                       width=> $tile_size, height => $tile_size);
       my $tile_name =
         "$tiles_dir/${base_name}_x" . $x . "y" . $y ."z$z.png";
       $tile_img->write (file => $tile_name)
@@ -137,6 +139,7 @@ sub generate_javascript {
         {
           file_base => $self->{base_name},
           tiles_subdir => $self->{tiles_subdir},
+          tile_size => $tile_size,
           dimensions => \@dimensions,
           view_port_width  => 500,
           view_port_height => 400,
@@ -145,6 +148,27 @@ sub generate_javascript {
         },
         "$base_dir/ajax.html"
   ) || die $tt->error(), "\n";
+}
+
+sub zip_files {
+  my ($self) = @_;
+  my $base_dir = $self->{base_dir};
+  my $base_name = $self->{base_name};
+  my $zip = Archive::Zip->new();
+
+  if (-e "$base_dir/$base_name.zip")
+  {
+    move "$base_dir/$base_name.zip", '.';
+  }
+  find ( {
+    wanted => sub { $zip->addFileOrDirectory($_) },
+    no_chdir => 1
+  }, $base_dir);
+  unless ($zip->writeToFileNamed("$base_name.zip") == AZ_OK)
+  {
+    die "$base_name.zip write error";
+  }
+  move "$base_name.zip", $base_dir;
 }
 
 sub generate {
@@ -159,6 +183,7 @@ sub generate {
   }
   $self->create_mini_map ($file_names[-1]);   # Last one is typically largest
   $self->generate_javascript (@file_names);
+  $self->zip_files ();
 }
 
 1;
