@@ -101,7 +101,7 @@
   
           this1.dragStartLeft = event.clientX;
           this1.dragStartTop  = event.clientY;
-          innerDiv = this1.innerDiv;
+          var innerDiv = this1.innerDiv;
           innerDiv.style.cursor = "move";
   
           this1.top = atoi(innerDiv.style.top);
