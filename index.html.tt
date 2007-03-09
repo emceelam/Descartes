@@ -30,7 +30,7 @@
       var mainMap;
       var magnifier;
 
-      function init() {
+      function mapInit() {
         magnifier = new Magnifier();
         mainMap = new MainMap();
 
@@ -45,6 +45,107 @@
 
         //alert ('hello world');
       }
+
+      function Magnifier () {
+        var this1 = this;
+        this.f_dragging = false;
+        this.div = document.getElementById("magnifier");
+        this.div.ondragstart = function() { return false; }  // for IE
+        this.div.onmousedown
+          = function (event) { return this1.startMove(this1, event) };
+        this.div.onmousemove
+          = function (event) { return this1.processMove(this1, event) };
+        this.div.onmouseup
+          = function (event) { return this1.stopMove(this1, event) };
+      }
+
+      Magnifier.prototype.startMove =
+        function (this1, event) {
+          // for IE
+          if (!event)
+            event = window.event;
+  
+          //var magnifierDiv = document.getElementById("magnifier");
+          var magnifierDiv = this1.div;
+          this1.dragStartLeft = event.clientX;
+          this1.dragStartTop  = event.clientY;
+          magnifierDiv.style.cursor = "move";
+  
+          this1.top  = atoi(magnifierDiv.style.top);
+          this1.left = atoi(magnifierDiv.style.left);
+  
+          this1.f_dragging = true;
+          return false;
+        }
+
+      Magnifier.prototype.processMove =
+        function (this1, event) {
+          var magnifierDiv = this1.div;
+  
+          if (!event) event = window.event;  // for IE
+          if (this1.f_dragging) {
+  
+            var maxX = 0;
+            var minX = [% mini_map_width %]  - atoi(magnifierDiv.style.width);
+            var maxY = 0;
+            var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
+  
+            var shiftedLeft = this1.left + (event.clientX - this1.dragStartLeft);
+            if (shiftedLeft < maxX) shiftedLeft = maxX; // map is not infinite
+            if (shiftedLeft > minX) shiftedLeft = minX;
+            magnifierDiv.style.left = shiftedLeft + "px";
+  
+            var shiftedTop = this1.top + (event.clientY - this1.dragStartTop);
+            if (shiftedTop < maxY) shiftedTop = maxY; // map is not infinite
+            if (shiftedTop > minY) shiftedTop = minY;
+            magnifierDiv.style.top = shiftedTop + "px";
+  
+            mainMap.setViewPort();
+          }
+  
+          var magnifierInfo = document.getElementById("magnifierInfo");
+          magnifierInfo.innerHTML = 
+            "magnifier: (" 
+              + magnifierDiv.style.left + "," + magnifierDiv.style.top + ") "
+            + "x:" + event.clientX + ", y:" + event.clientY;
+        }
+
+      Magnifier.prototype.stopMove =
+        function (this1, event) {
+          this1.div.style.cursor = "";
+          this1.f_dragging = false;
+        }
+
+      Magnifier.prototype.setSize =
+        function (innerDivWidth, innerDivHeight) {
+          var magnifierWidth
+            = Math.round([% view_port_width  * mini_map_width  %] / innerDivWidth);
+          var magnifierHeight
+            = Math.round([% view_port_height * mini_map_height %] / innerDivHeight);
+          var magnifierDiv = document.getElementById("magnifier");
+          magnifierDiv.style.width  = magnifierWidth  + "px";
+          magnifierDiv.style.height = magnifierHeight + "px";
+        }
+
+      Magnifier.prototype.setPosition =
+        function () {
+          var innerDiv = document.getElementById("innerDiv");
+          var innerDivWidth  = atoi(innerDiv.style.width);
+          var innerDivHeight = atoi(innerDiv.style.height);
+          var innerDivLeft   = atoi(innerDiv.style.left);
+          var innerDivTop    = atoi(innerDiv.style.top);
+          this.left
+            = Math.round(Math.abs(innerDivLeft) * [% mini_map_width %] 
+              / innerDivWidth);
+          this.top
+            = Math.round(Math.abs(innerDivTop)  * [% mini_map_height %] 
+              / innerDivHeight);
+
+          // alter magnifier
+          var magnifierDiv = this.div;
+          magnifierDiv.style.left = this.left + "px";
+          magnifierDiv.style.top  = this.top  + "px";
+        }
 
       function MainMap () {
         var this1 = this;
@@ -80,19 +181,6 @@
         this.checkTiles();
       }
 
-      function Magnifier () {
-        var this1 = this;
-        this.f_dragging = false;
-        this.div = document.getElementById("magnifier");
-        this.div.ondragstart = function() { return false; }  // for IE
-        this.div.onmousedown
-          = function (event) { return this1.startMove(this1, event) };
-        this.div.onmousemove
-          = function (event) { return this1.processMove(this1, event) };
-        this.div.onmouseup
-          = function (event) { return this1.stopMove(this1, event) };
-      }
-
       MainMap.prototype.startMove =
         function (this1, event) {
           // for IE
@@ -106,25 +194,6 @@
   
           this1.top = atoi(innerDiv.style.top);
           this1.left = atoi(innerDiv.style.left);
-  
-          this1.f_dragging = true;
-          return false;
-        }
-
-      Magnifier.prototype.startMove =
-        function (this1, event) {
-          // for IE
-          if (!event)
-            event = window.event;
-  
-          //var magnifierDiv = document.getElementById("magnifier");
-          var magnifierDiv = this1.div;
-          this1.dragStartLeft = event.clientX;
-          this1.dragStartTop  = event.clientY;
-          magnifierDiv.style.cursor = "move";
-  
-          this1.top  = atoi(magnifierDiv.style.top);
-          this1.left = atoi(magnifierDiv.style.left);
   
           this1.f_dragging = true;
           return false;
@@ -162,38 +231,6 @@
           infoDiv.innerHTML =
             "main map (" + innerDiv.style.left + "," + innerDiv.style.top + ") "
               + "x:" + event.clientX + ", y:" + event.clientY;
-        }
-
-      Magnifier.prototype.processMove =
-        function (this1, event) {
-          var magnifierDiv = this1.div;
-  
-          if (!event) event = window.event;  // for IE
-          if (this1.f_dragging) {
-  
-            var maxX = 0;
-            var minX = [% mini_map_width %]  - atoi(magnifierDiv.style.width);
-            var maxY = 0;
-            var minY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
-  
-            var shiftedLeft = this1.left + (event.clientX - this1.dragStartLeft);
-            if (shiftedLeft < maxX) shiftedLeft = maxX; // map is not infinite
-            if (shiftedLeft > minX) shiftedLeft = minX;
-            magnifierDiv.style.left = shiftedLeft + "px";
-  
-            var shiftedTop = this1.top + (event.clientY - this1.dragStartTop);
-            if (shiftedTop < maxY) shiftedTop = maxY; // map is not infinite
-            if (shiftedTop > minY) shiftedTop = minY;
-            magnifierDiv.style.top = shiftedTop + "px";
-  
-            mainMap.setViewPort();
-          }
-  
-          var magnifierInfo = document.getElementById("magnifierInfo");
-          magnifierInfo.innerHTML = 
-            "magnifier: (" 
-              + magnifierDiv.style.left + "," + magnifierDiv.style.top + ") "
-            + "x:" + event.clientX + ", y:" + event.clientY;
         }
 
       MainMap.prototype.checkTiles =
@@ -263,48 +300,6 @@
           //alert ("left: " + innerDiv.style.left + ", top: " + innerDiv.style.top);
         }
 
-      Magnifier.prototype.stopMove =
-        function (this1, event) {
-          this1.div.style.cursor = "";
-          this1.f_dragging = false;
-        }
-
-      function atoi (s) {
-        var val = parseInt(s);
-        return (isNaN(val)) ? 0 : val;
-      }
-
-      Magnifier.prototype.setSize =
-        function (innerDivWidth, innerDivHeight) {
-          var magnifierWidth
-            = Math.round([% view_port_width  * mini_map_width  %] / innerDivWidth);
-          var magnifierHeight
-            = Math.round([% view_port_height * mini_map_height %] / innerDivHeight);
-          var magnifierDiv = document.getElementById("magnifier");
-          magnifierDiv.style.width  = magnifierWidth  + "px";
-          magnifierDiv.style.height = magnifierHeight + "px";
-        }
-
-      Magnifier.prototype.setPosition =
-        function () {
-          var innerDiv = document.getElementById("innerDiv");
-          var innerDivWidth  = atoi(innerDiv.style.width);
-          var innerDivHeight = atoi(innerDiv.style.height);
-          var innerDivLeft   = atoi(innerDiv.style.left);
-          var innerDivTop    = atoi(innerDiv.style.top);
-          this.left
-            = Math.round(Math.abs(innerDivLeft) * [% mini_map_width %] 
-              / innerDivWidth);
-          this.top
-            = Math.round(Math.abs(innerDivTop)  * [% mini_map_height %] 
-              / innerDivHeight);
-
-          // alter magnifier
-          var magnifierDiv = this.div;
-          magnifierDiv.style.left = this.left + "px";
-          magnifierDiv.style.top  = this.top  + "px";
-        }
-
       // movement in the magnifier moves main map's view port
       MainMap.prototype.setViewPort =
         function () {
@@ -337,8 +332,8 @@
         }
 
       MainMap.prototype.setZoom =
-        function (zoomLevel) {
-          if (this.zoom == zoomLevel) return;
+        function (newZoom) {
+          if (this.zoom == newZoom) return;
           var zoom = this.zoom;
           var zoomSizes = this.zoomSizes;
 
@@ -352,28 +347,34 @@
           var oldTop    = atoi(innerDiv.style.top);
           var oldWidth  = zoomSizes[zoom][0];
           var oldHeight = zoomSizes[zoom][1];
-          var newWidth  = zoomSizes[zoomLevel][0];
-          var newHeight = zoomSizes[zoomLevel][1];
+          var newWidth  = zoomSizes[newZoom][0];
+          var newHeight = zoomSizes[newZoom][1];
 
           var newLeft = Math.round(newWidth  * oldLeft / oldWidth);
           var newTop  = Math.round(newHeight * oldTop  / oldHeight);
           innerDiv.style.left = newLeft + "px";
           innerDiv.style.top  = newTop  + "px";
 
-          this.zoom = zoomLevel;  // set the global zoom
+          this.zoom = newZoom;  // set the global zoom
           this.setInnerDivSize (newWidth, newHeight);
           this.checkTiles();
         }
+
+      function atoi (s) {
+        var val = parseInt(s);
+        return (isNaN(val)) ? 0 : val;
+      }
+
       //]]>
     </script>
   </head>
-  <body onload="init()">
-    <h2>AJAX Map (Work in Progress)</h2>
+  <body onload="mapInit()">
+    <h2>AJAX Map (Beta)</h2>
     <div id="infoDiv">
-      info div
+      main map
     </div>
     <div id="magnifierInfo">
-      magnifier info
+      magnifier
     </div>
 
     <!-- main map -->
@@ -406,10 +407,15 @@
     <div style="position:absolute; left:550px; top:300px; width:250px;
                 border:black solid 1px; background:#d6e7ee; padding-left:2px;
                 font:normal 10pt serif;">
-      Google style draggable maps. Go ahead and mouse drag within the main
-      map. The magnifier in the mini map is also draggable. You may
-      <a href="[% file_base %].zip">download the generated files</a> to
-      run this on your own web site.
+      <p>
+        Google style draggable maps. Go ahead and mouse drag within the main
+        map. The magnifier in the mini map is also draggable.
+      </p>
+      <p>
+        This program takes a pdf and generates an AJAX map. You may
+        <a href="[% file_base %].zip">download the generated files</a> to
+        run this on your own web site.
+      </p>
     </div>
   </body>
 </html>
