@@ -102,7 +102,7 @@ sub tile_image {
                        left => $x * $tile_size, top => $y * $tile_size,
                        width=> $tile_size, height => $tile_size);
       my $tile_name =
-        "$tiles_dir/${base_name}_x" . $x . "y" . $y ."z$z.png";
+        "$tiles_dir/x$x" . "y$y" ."z$z.png";
       $tile_img->write (file => $tile_name)
         || die "Cannot write tile $x,$y: ". $tile_img->errstr();
       $tile_cnt++;
@@ -161,9 +161,11 @@ sub zip_files {
     move "$base_dir/$base_name.zip", '.';
   }
   find ( {
-    wanted => sub { $zip->addFileOrDirectory($_) },
+    wanted => sub { $File::Find::dir !~ m/rendered$/ &&
+                      $zip->addFileOrDirectory($_) },
     no_chdir => 1
   }, $base_dir);
+  $zip->addFile("$base_dir/rendered/mini_map.png");
   unless ($zip->writeToFileNamed("$base_name.zip") == AZ_OK)
   {
     die "$base_name.zip write error";

@@ -249,7 +249,7 @@
             var img = document.getElementById (tileName);
             if (!img) {
               img = document.createElement("img");
-              img.src = "[% "$tiles_subdir/$file_base" %]_" + tileName + ".png";
+              img.src = "[% tiles_subdir %]/" + tileName + ".png";
               img.style.position = "absolute";
               img.style.left = (tileArray[0] * tileSize) + "px";
               img.style.top = (tileArray[1] * tileSize) + "px";
