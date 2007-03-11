@@ -244,12 +244,14 @@
   
           for (i=0;i<visibleTiles.length; i++) {
             var tileArray = visibleTiles[i];
-            var tileName = "x" + tileArray[0] + "y" + tileArray[1] + "z" + this.zoom;
+            var tileName 
+              = "x" + tileArray[0] + "y" + tileArray[1] + "z" + this.zoom;
             visibleTilesMap[tileName] = true;
             var img = document.getElementById (tileName);
             if (!img) {
               img = document.createElement("img");
-              img.src = "[% tiles_subdir %]/" + tileName + ".png";
+              img.src 
+                = "[% tiles_subdir %]/" + tileName + ".[% tile_file_ext %]";
               img.style.position = "absolute";
               img.style.left = (tileArray[0] * tileSize) + "px";
               img.style.top = (tileArray[1] * tileSize) + "px";
