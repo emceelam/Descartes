@@ -55,8 +55,8 @@ sub pdf_to_png {
 
   # render at different resolutions
   # at scale 100%, monitor resolution is 72dpi
-  my @dpiResolutions = map { round($_ * 72) } @$scales;
-  foreach my $dpi (@dpiResolutions) {
+  foreach my $scale (@$scales) {
+    my $dpi = round($scale * 72);
     system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
               "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
               "-dFirstPage=1 -dLastPage=1 -r$dpi " .
@@ -67,7 +67,9 @@ sub pdf_to_png {
       die "Can't parse image info: $error\n";
     }
     my ($width, $height) = dim ($info);
-    my $dest_file_name = "${file_base}_w${width}_h${height}_dpi${dpi}.png";
+    my $percent_scale = sprintf "%03d", $scale * 100;
+    my $dest_file_name =
+      "w${width}_h${height}_scale${percent_scale}.png";
     rename "$rendered_dir/$file_base.png", "$rendered_dir/$dest_file_name";
     print "rendered $dest_file_name\n";
     push @image_file_names, $dest_file_name;
@@ -98,7 +100,7 @@ sub tile_image {
   my $base_name = $self->{base_name};
   my $file_ext = $self->{target_file_ext};
   my ($img_width, $img_height) =
-    $file_name =~ m/_w(\d+)_h(\d+)_(?:dpi|scale)(\d+)\.(.*)$/;
+    $file_name =~ m/w(\d+)_h(\d+)_scale(\d+)\.(?:png|gif|jpg)$/;
   print "$base_name, $img_width, $img_height\n";
   my $img = Imager->new;
   $img->read (file => "$rendered_dir/$file_name")
@@ -134,10 +136,9 @@ sub generate_javascript {
   my $info;
 
   foreach my $file_name (@file_names) {
-    $info = image_info("$rendered_dir/$file_name");
-    die "Can't parse image info: $error\n" if ($error = $info->{error});
-    my ($width, $height) = dim ($info);
-    push @dimensions, { width => $width, height => $height };
+    my ($width, $height, $scale) =
+      $file_name =~ m/w(\d+)_h(\d+)_scale(\d+)\.(?:jpg|png|gif)$/;
+    push @dimensions, { width => $width, height => $height, scale => $scale };
   }
   $info = image_info("$rendered_dir/$mini_map_name");
   my ($mini_map_width, $mini_map_height) = dim($info);
@@ -204,21 +205,19 @@ sub scale_raster_image {
   foreach $scale (@$scales) {
     my $scaled_img = $img->scale(scalefactor => $scale);
     ($width, $height) = ($scaled_img->getwidth(), $scaled_img->getheight());
-    $dest_file_name = "${base_name}_w${width}_h${height}_scale"
+    $dest_file_name = "w${width}_h${height}_scale"
       . sprintf ("%03d", $scale * 100) . ".$file_ext";
 
-    ### Sorry, the original image sometimes returns multiple resolutions 
-    ### to Image::Info. Rewriting is the quickest expedient.
-    #
-    #if ($scale == 1) {
-    #  copy $source_file, "$rendered_dir/$dest_file_name"
-    #    || die "unable to write $dest_file_name\n";
-    #}
-    #else {
+    if ($scale == 1) {
+      print "Copied $dest_file_name\n";
+      copy $source_file, "$rendered_dir/$dest_file_name"
+        || die "unable to write $dest_file_name\n";
+    }
+    else {
       print "Rendered $dest_file_name\n";
       $scaled_img->write (file => "$rendered_dir/$dest_file_name")
         or die $scaled_img->errstr;
-    #}
+    }
     push @file_names, $dest_file_name;
   }
 

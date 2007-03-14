@@ -59,6 +59,13 @@ necessary to support a google style map.
 
 =head1 ARGUMENTS
 
+=head2 --scale
+
+Sets the scale factors for the renders. For example, 75%, 100%, 125% and 150% is
+represented as 
+
+--scale='0.75 1 1.25 1.50'
+
 =head2 --help
 
 Print this help section

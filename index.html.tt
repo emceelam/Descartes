@@ -177,14 +177,14 @@
         outerDiv.ondragstart = function() { return false; }  // for IE
 
         this.zoom = 0;
-        this.zoomSizes = [
+        this.zoomDim = [
           [% FOREACH dim = dimensions -%]
-            [ [% dim.width %], [% dim.height %] ],
+            { width:[% dim.width %], height:[% dim.height %], scale:[% dim.scale %] },
           [% END -%]
-        ];
+        ]
 
-        this.setInnerDivSize (
-          this.zoomSizes[this.zoom][0],this.zoomSizes[this.zoom][1]);
+        var zoomElt = this.zoomDim[this.zoom];
+        this.setInnerDivSize (zoomElt.width, zoomElt.height, zoomElt.scale);
         this.checkTiles();
       }
 
@@ -208,14 +208,11 @@
 
       MainMap.prototype.processMove =
         function (this1, event) {
-          var zoomSizes = this1.zoomSizes;
-          var zoom = this1.zoom;
-          var zoomWidth  = zoomSizes[zoom][0];
-          var zoomHeight = zoomSizes[zoom][1];
+          var zoomElt = this.zoomDim[this1.zoom];
           var maxY = 0;
-          var minY = -(zoomHeight - this1.viewPortHeight);
+          var minY = -(zoomElt.height - this1.viewPortHeight);
           var maxX = 0;
-          var minX = -(zoomWidth - this1.viewPortWidth);
+          var minX = -(zoomElt.width  - this1.viewPortWidth);
   
           if (!event) event = window.event;  // for IE
           var innerDiv = this1.innerDiv;
@@ -332,7 +329,7 @@
         }
 
       MainMap.prototype.setInnerDivSize =
-        function (width, height) {
+        function (width, height, scale) {
           var innerDiv = this.innerDiv;
           innerDiv.style.width  = width  + "px";
           innerDiv.style.height = height + "px";
@@ -341,15 +338,15 @@
 
           var resolutionInfo = document.getElementById("resolutionInfo");
           resolutionInfo.innerHTML
-            = width + "px by " + height + "px" ;
+            = scale + "%, " +  width + "px by " + height + "px" ;
         }
 
       MainMap.prototype.setZoom =
         function (newZoom) {
           if (this.zoom == newZoom) return;
-          var zoom = this.zoom;
-          var zoomSizes = this.zoomSizes;
 
+          var oldZ = this.zoomDim[this.zoom];
+          var newZ = this.zoomDim[newZoom];
           var innerDiv = this.innerDiv;
           var imgs = innerDiv.getElementsByTagName("img");
           while (imgs.length > 0) {
@@ -358,24 +355,22 @@
 
           var oldLeft   = atoi(innerDiv.style.left);
           var oldTop    = atoi(innerDiv.style.top);
-          var oldWidth  = zoomSizes[zoom][0];
-          var oldHeight = zoomSizes[zoom][1];
-          var newWidth  = zoomSizes[newZoom][0];
-          var newHeight = zoomSizes[newZoom][1];
 
-          var newLeft = Math.round(newWidth  * oldLeft / oldWidth);
-          var newTop  = Math.round(newHeight * oldTop  / oldHeight);
+          var newLeft = Math.round(newZ.width  * oldLeft / oldZ.width);
+          var newTop  = Math.round(newZ.height * oldTop  / oldZ.height);
           innerDiv.style.left = newLeft + "px";
           innerDiv.style.top  = newTop  + "px";
 
           this.zoom = newZoom;  // set the global zoom
-          this.setInnerDivSize (newWidth, newHeight);
+          this.setInnerDivSize (newZ.width, newZ.height, newZ.scale);
           this.checkTiles();
         }
 
       function atoi (s) {
-        var val = parseInt(s);
-        return (isNaN(val)) ? 0 : val;
+        if (s == null || s == '') {
+          return 0;
+        }
+        return parseInt(s);
       }
 
       //]]>
