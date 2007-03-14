@@ -53,7 +53,8 @@ sub pdf_to_png {
 
   my @image_file_names;
 
-  # render at different resolutions (monitor resolution is 72dpi)
+  # render at different resolutions
+  # at scale 100%, monitor resolution is 72dpi
   my @dpiResolutions = map { round($_ * 72) } @$scales;
   foreach my $dpi (@dpiResolutions) {
     system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
@@ -256,7 +257,6 @@ sub generate {
   else {
     @file_names = $self->scale_raster_image ();
   }
-  #print join (',', @file_names), "\n";
   foreach my $i (0 .. $#file_names) {
     $self->tile_image ($file_names[$i], $i);
   }
