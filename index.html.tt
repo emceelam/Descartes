@@ -20,6 +20,14 @@
       #innerDiv {
         position: relative; left: 0px; top: 0px;
       }
+      #resolutionInfo {
+        border-left: 1px solid black;
+        border-right: 1px solid black;
+        border-bottom: 1px solid black;
+        margin-left: 2px;
+        width: [% view_port_width %]px;
+        background:#00cdcd; font: normal 8pt sans-serif;
+      }
       div.miniMap {
         position: absolute; left:550px; top:10px; border: solid black 1px;
       }
@@ -331,6 +339,10 @@
           innerDiv.style.height = height + "px";
           magnifier.setPosition();
           magnifier.setSize (width, height);
+
+          var resolutionInfo = document.getElementById("resolutionInfo");
+          resolutionInfo.innerHTML
+            = width + "px by " + height + "px" ;
         }
 
       MainMap.prototype.setZoom =
@@ -372,25 +384,23 @@
   </head>
   <body onload="mapInit()">
     <h2>AJAX Map (Beta)</h2>
-    <div id="infoDiv">
-      main map
-    </div>
-    <div id="magnifierInfo">
-      magnifier
-    </div>
 
     <!-- main map -->
-    <div id="outerDiv">
-      [% FOREACH dim = dimensions %]
-        <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
-        <div style="position:absolute;
-                    top:[% (loop.index + 1) * 12 %]px; left:10px; z-index:1;
-                    width:20px; height:5px; font-size:10%;
-                    border:solid 1px blue; background:#d6e7ee"
-            onclick="mainMap.setZoom([% loop.index %])">
+    <div>
+      <div id="outerDiv">
+        [% FOREACH dim = dimensions %]
+          <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
+          <div style="position:absolute;
+                      top:[% (loop.index + 1) * 12 %]px; left:10px; z-index:1;
+                      width:20px; height:5px; font-size:10%;
+                      border:solid 1px blue; background:#d6e7ee"
+              onclick="mainMap.setZoom([% loop.index %])">
+          </div>
+        [%- END %]
+        <div id="innerDiv" style="z-index: 0">
         </div>
-      [%- END %]
-      <div id="innerDiv" style="z-index: 0">
+      </div>
+      <div id="resolutionInfo">
       </div>
     </div>
 
@@ -414,10 +424,16 @@
         map. The magnifier in the mini map is also draggable.
       </p>
       <p>
-        This program takes a pdf and generates an AJAX map. You may
-        <a href="[% file_base %].zip">download the generated files</a> to
-        run this on your own web site.
+        This program takes a pdf, png, jpg, or gif and generates an AJAX map.
+        You may <a href="[% file_base %].zip">download the generated files</a>
+        to run this on your own web site.
       </p>
+      <div id="infoDiv" style="border-top: solid black thin">
+        main map
+      </div>
+      <div id="magnifierInfo">
+        magnifier
+      </div>
     </div>
   </body>
 </html>

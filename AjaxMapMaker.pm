@@ -10,7 +10,8 @@ use Readonly;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
-#use Data::Dumper;
+use Params::Validate qw(validate ARRAYREF);
+use Math::Round qw(round);
 
 Readonly my $tile_size => 256;
 Readonly my $mini_map_max_width  => 200;
@@ -45,14 +46,15 @@ sub pdf_to_png {
   my $file_base = $self->{base_name};
   my $rendered_dir = $self->{rendered_dir};
   my $pdf_name = $self->{pdf_name};
+  my $scales = $self->{scales} || [1, 1.5, 2, 3];
   my $error;
   my $info;
   $self->{target_file_ext} = 'png';
 
   my @image_file_names;
 
-  # render at different resolutions
-  my @dpiResolutions = qw(72 100 200 300);
+  # render at different resolutions (monitor resolution is 72dpi)
+  my @dpiResolutions = map { round($_ * 72) } @$scales;
   foreach my $dpi (@dpiResolutions) {
     system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
               "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
@@ -139,8 +141,6 @@ sub generate_javascript {
   $info = image_info("$rendered_dir/$mini_map_name");
   my ($mini_map_width, $mini_map_height) = dim($info);
 
-  #print Dumper \@dimensions;
-
   my $tt = Template->new ();
   $tt->process(
         'index.html.tt',
@@ -182,8 +182,11 @@ sub zip_files {
   move "$base_name.zip", $base_dir;
 }
 
+# scale a raster image, save the scaled images
+# and return the list of scaled raster images
 sub scale_raster_image {
   my $self = shift;
+  my $scales = $self->{scales} || [0.25, 0.5, 0.75, 1];
   my $source_file = $self->{source_file_name};
   my $rendered_dir = $self->{rendered_dir};
   my $base_name = $self->{base_name};
@@ -197,28 +200,51 @@ sub scale_raster_image {
   $img->read (file => $source_file) 
     || die "scale_raster_image:" . $img->errstr() . "\n";
 
-  foreach $scale (qw/1 0.75 0.50 0.25/) {
+  foreach $scale (@$scales) {
     my $scaled_img = $img->scale(scalefactor => $scale);
     ($width, $height) = ($scaled_img->getwidth(), $scaled_img->getheight());
     $dest_file_name = "${base_name}_w${width}_h${height}_scale"
       . sprintf ("%03d", $scale * 100) . ".$file_ext";
-    if ($scale == 1) {
-      copy $source_file, "$rendered_dir/$dest_file_name"
-        || die "unable to write $dest_file_name\n";
-    }
-    else {
+
+    ### Sorry, the original image sometimes returns multiple resolutions 
+    ### to Image::Info. Rewriting is the quickest expedient.
+    #
+    #if ($scale == 1) {
+    #  copy $source_file, "$rendered_dir/$dest_file_name"
+    #    || die "unable to write $dest_file_name\n";
+    #}
+    #else {
+      print "Rendered $dest_file_name\n";
       $scaled_img->write (file => "$rendered_dir/$dest_file_name")
         or die $scaled_img->errstr;
-    }
-    unshift @file_names, $dest_file_name;
+    #}
+    push @file_names, $dest_file_name;
   }
 
   return @file_names;
 }
 
+=head2 generate
+
+When called, generate will coordinate the creation of the files neccessary
+to create an AJAX map
+
+=head3 scales
+
+List ref of scaling factors. 100% scale factor is 1. 50% is 0.5.
+So on and so on
+
+=cut
 sub generate {
   my $self = shift;
   my @file_names;
+  my %p = validate ( @_, {
+                        scales => {
+                          type => ARRAYREF,
+                          optional => 1
+                        },
+                      });
+  $self->{scales} = $p{scales};
 
   mkdir $self->{base_dir} || die "Could not create base_dir\n";
   mkdir $self->{rendered_dir} || die "Could not create rendered_dir\n";
