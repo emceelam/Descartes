@@ -2,6 +2,8 @@ package AjaxMapMaker;
 
 # Written by Lambert Lum (emceelam@warpmail.net)
 
+use version; our $VERSION = qv('0.1');  # Must all be on same line
+
 use strict;
 use Imager;
 use Image::Info qw(image_info dim);
@@ -10,8 +12,10 @@ use Readonly;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
+use File::Path qw(mkpath rmtree);
 use Params::Validate qw(validate ARRAYREF);
 use Math::Round qw(round);
+use Cwd;
 
 Readonly my $tile_size => 256;
 Readonly my $mini_map_max_width  => 200;
@@ -26,15 +30,18 @@ sub new {
   $base_name =~ s/[^a-z0-9.\-]/_/g;
   $file_ext = lc $file_ext;
   my $tiles_subdir = "tiles";
+  my $start_dir = "__processing";
+  my $base_dir = "$start_dir/$base_name";
   my $self = {
     pdf_name => $source_file,
     source_file_name => $source_file,
     source_file_ext  => $file_ext,
     target_file_ext => ($file_ext eq 'pdf' ? 'png' : $file_ext),
-    base_dir => $base_name,
+    start_dir => $start_dir,
+    base_dir => $base_dir,
     base_name => $base_name,
-    rendered_dir => "$base_name/rendered",
-    tiles_dir => "$base_name/$tiles_subdir",
+    rendered_dir => "$base_dir/rendered",
+    tiles_dir => "$base_dir/$tiles_subdir",
     tiles_subdir => $tiles_subdir,
   };
   return bless $self, $class_name;
@@ -43,7 +50,7 @@ sub new {
 sub pdf_to_png {
   my $self = shift;
   my $base_dir = $self->{base_dir};
-  my $file_base = $self->{base_name};
+  my $base_name = $self->{base_name};
   my $rendered_dir = $self->{rendered_dir};
   my $pdf_name = $self->{pdf_name};
   my $scales = $self->{scales} || [1, 1.5, 2, 3];
@@ -61,8 +68,8 @@ sub pdf_to_png {
               "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
               "-dFirstPage=1 -dLastPage=1 -r$dpi " .
               "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
-              "-sOutputFile=$rendered_dir/$file_base.png $pdf_name");
-    $info = image_info ("$rendered_dir/$file_base.png");
+              "-sOutputFile=$rendered_dir/$base_name.png $pdf_name");
+    $info = image_info ("$rendered_dir/$base_name.png");
     if ($error = $info->{error}) {
       die "Can't parse image info: $error\n";
     }
@@ -70,7 +77,7 @@ sub pdf_to_png {
     my $percent_scale = sprintf "%03d", $scale * 100;
     my $dest_file_name =
       "w${width}_h${height}_scale${percent_scale}.png";
-    rename "$rendered_dir/$file_base.png", "$rendered_dir/$dest_file_name";
+    rename "$rendered_dir/$base_name.png", "$rendered_dir/$dest_file_name";
     print "rendered $dest_file_name\n";
     push @image_file_names, $dest_file_name;
   }
@@ -163,14 +170,16 @@ sub generate_javascript {
 
 sub zip_files {
   my ($self) = @_;
-  my $base_dir = $self->{base_dir};
   my $base_name = $self->{base_name};
+  my $base_dir = $base_name; # A hack because we chdir to start_dir
   my $zip = Archive::Zip->new();
+  my $cwd = cwd();
+  my $start_dir = $self->{start_dir};
 
-  if (-e "$base_dir/$base_name.zip")
-  {
-    move "$base_dir/$base_name.zip", '.';
-  }
+  chdir("$cwd/$start_dir") || die "Could not chdir($start_dir)\n";
+  die "At ". cwd(). ", where is directory $base_dir? And $start_dir?" 
+    if !-d $base_dir;
+
   find ( {
     wanted => sub { $File::Find::dir !~ m/rendered$/ &&
                       $zip->addFileOrDirectory($_) },
@@ -182,6 +191,8 @@ sub zip_files {
     die "$base_name.zip write error";
   }
   move "$base_name.zip", $base_dir;
+
+  chdir $cwd;
 }
 
 # scale a raster image, save the scaled images
@@ -224,6 +235,16 @@ sub scale_raster_image {
   return @file_names;
 }
 
+sub move_generated_files_to_final_directory {
+  my $self = shift;
+
+  my $final_dir = cwd() . '/' . $self->{base_name};
+  my $base_dir  = cwd() . '/' . $self->{base_dir};
+
+  rmtree $final_dir;
+  move $base_dir, $final_dir;
+}
+
 =head2 generate
 
 When called, generate will coordinate the creation of the files neccessary
@@ -246,10 +267,7 @@ sub generate {
                       });
   $self->{scales} = $p{scales};
 
-  mkdir $self->{base_dir} || die "Could not create base_dir\n";
-  mkdir $self->{rendered_dir} || die "Could not create rendered_dir\n";
-  mkdir $self->{tiles_dir} || die "Could not create tiles_dir\n";
-
+  mkpath ( [$self->{base_dir}, $self->{rendered_dir}, $self->{tiles_dir}] );
   if ($self->{source_file_name} =~ m/\.pdf$/) {
     @file_names = $self->pdf_to_png ();
   }
@@ -262,6 +280,7 @@ sub generate {
   $self->create_mini_map ($file_names[-1]);   # Last one is typically largest
   $self->generate_javascript (@file_names);
   $self->zip_files ();
+  $self->move_generated_files_to_final_directory();
 }
 
 1;

@@ -93,9 +93,9 @@
           if (this1.f_dragging) {
   
             var minX = 0;
-            var maxX = [% mini_map_width %]  - atoi(magnifierDiv.style.width) -1;
+            var maxX = [% mini_map_width %]  - atoi(magnifierDiv.style.width);
             var minY = 0;
-            var maxY = [% mini_map_height %] - atoi(magnifierDiv.style.height) -1;
+            var maxY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
   
             var shiftedLeft = this1.left + (event.clientX - this1.dragStartLeft);
             if (shiftedLeft < minX) shiftedLeft = minX; // map is not infinite
