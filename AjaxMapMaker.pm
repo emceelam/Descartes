@@ -13,7 +13,7 @@ use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
 use File::Path qw(mkpath rmtree);
-use Params::Validate qw(validate ARRAYREF);
+use Params::Validate qw(validate ARRAYREF BOOLEAN);
 use Math::Round qw(round);
 use Cwd;
 
@@ -23,20 +23,24 @@ Readonly my $mini_map_max_height => 200;
 Readonly my $mini_map_name => "mini_map.png";
 
 sub new {
-  my ($class_name, $source_file) = @_;
+  my ($class_name, $source_file, $dest_dir) = @_;
 
   my ($base_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
-  $base_name = lc $base_name;
-  $base_name =~ s/[^a-z0-9.\-]/_/g;
+  $base_name =~ s/[^a-zA-Z0-9.\-]/_/g;
   $file_ext = lc $file_ext;
+  $dest_dir ||= '.';
+  $dest_dir =~ s|/$||;
+  my $dest_base = "$dest_dir/$base_name";
   my $tiles_subdir = "tiles";
-  my $start_dir = "__processing";
+  my $start_dir = "$dest_dir/__processing";
   my $base_dir = "$start_dir/$base_name";
   my $self = {
     pdf_name => $source_file,
     source_file_name => $source_file,
     source_file_ext  => $file_ext,
     target_file_ext => ($file_ext eq 'pdf' ? 'png' : $file_ext),
+    dest_dir => $dest_dir,
+    dest_base => $dest_base,
     start_dir => $start_dir,
     base_dir => $base_dir,
     base_name => $base_name,
@@ -71,7 +75,7 @@ sub pdf_to_png {
               "-sOutputFile=$rendered_dir/$base_name.png $pdf_name");
     $info = image_info ("$rendered_dir/$base_name.png");
     if ($error = $info->{error}) {
-      die "Can't parse image info: $error\n";
+      die "Can't parse image info: $error";
     }
     my ($width, $height) = dim ($info);
     my $percent_scale = sprintf "%03d", $scale * 100;
@@ -170,14 +174,15 @@ sub generate_javascript {
 
 sub zip_files {
   my ($self) = @_;
+  my $dest_dir = $self->{dest_dir};
   my $base_name = $self->{base_name};
-  my $base_dir = $base_name; # A hack because we chdir to start_dir
+  my $base_dir = $base_name;
   my $zip = Archive::Zip->new();
   my $cwd = cwd();
   my $start_dir = $self->{start_dir};
 
-  chdir("$cwd/$start_dir") || die "Could not chdir($start_dir)\n";
-  die "At ". cwd(). ", where is directory $base_dir? And $start_dir?" 
+  chdir("$cwd/$start_dir") || die "zip_files could not chdir\n";
+  die "At ". cwd(). ", where is directory $base_dir?"
     if !-d $base_dir;
 
   find ( {
@@ -186,11 +191,11 @@ sub zip_files {
     no_chdir => 1
   }, $base_dir);
   $zip->addFile("$base_dir/rendered/mini_map.png");
-  unless ($zip->writeToFileNamed("$base_name.zip") == AZ_OK)
-  {
+  unless ($zip->writeToFileNamed("$base_name.zip") == AZ_OK) {
     die "$base_name.zip write error";
   }
-  move "$base_name.zip", $base_dir;
+  move "$base_name.zip", $base_dir ||
+   die "At ". cwd() . ", Could not move zip file: $!";
 
   chdir $cwd;
 }
@@ -210,7 +215,7 @@ sub scale_raster_image {
   my $dest_file_name;
 
   my $img = Imager->new;
-  $img->read (file => $source_file) 
+  $img->read (file => $source_file)
     || die "scale_raster_image:" . $img->errstr() . "\n";
 
   foreach $scale (@$scales) {
@@ -238,11 +243,11 @@ sub scale_raster_image {
 sub move_generated_files_to_final_directory {
   my $self = shift;
 
-  my $final_dir = cwd() . '/' . $self->{base_name};
-  my $base_dir  = cwd() . '/' . $self->{base_dir};
+  my $dest   = cwd() . '/' . $self->{dest_base};
+  my $source = cwd() . '/' . $self->{base_dir};
 
-  rmtree $final_dir;
-  move $base_dir, $final_dir;
+  rmtree $dest;
+  move $source, $dest;
 }
 
 =head2 generate
@@ -250,37 +255,49 @@ sub move_generated_files_to_final_directory {
 When called, generate will coordinate the creation of the files neccessary
 to create an AJAX map
 
-=head3 scales
+=head3 parameters
 
-List ref of scaling factors. 100% scale factor is 1. 50% is 0.5.
+scales: List ref of scaling factors. 100% scale factor is 1. 50% is 0.5.
 So on and so on
+
+=head3 return
+
+returns the directory where generated files reside
 
 =cut
 sub generate {
   my $self = shift;
   my @file_names;
   my %p = validate ( @_, {
-                        scales => {
-                          type => ARRAYREF,
-                          optional => 1
-                        },
-                      });
+    scales => { type => ARRAYREF, optional => 1 },
+    f_quiet => { type => BOOLEAN, default => 0 },
+    f_skip_render => { type => BOOLEAN, default => 0 },
+  } );
   $self->{scales} = $p{scales};
 
   mkpath ( [$self->{base_dir}, $self->{rendered_dir}, $self->{tiles_dir}] );
-  if ($self->{source_file_name} =~ m/\.pdf$/) {
-    @file_names = $self->pdf_to_png ();
+
+  if (!$p{f_skip_render})
+  {
+    if ($self->{source_file_name} =~ m/\.pdf$/) {
+      @file_names = $self->pdf_to_png ();
+    }
+    else {
+      @file_names = $self->scale_raster_image ();
+    }
+    foreach my $i (0 .. $#file_names) {
+      $self->tile_image ($file_names[$i], $i);
+    }
+    $self->create_mini_map ($file_names[-1]);   
+      # Create a mini map based on the last file. Last is typically largest.
   }
-  else {
-    @file_names = $self->scale_raster_image ();
-  }
-  foreach my $i (0 .. $#file_names) {
-    $self->tile_image ($file_names[$i], $i);
-  }
-  $self->create_mini_map ($file_names[-1]);   # Last one is typically largest
+
   $self->generate_javascript (@file_names);
   $self->zip_files ();
   $self->move_generated_files_to_final_directory();
+
+  # return the image directory where generated files are located
+  return $self->{base_name};
 }
 
 1;
