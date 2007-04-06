@@ -110,8 +110,8 @@ sub scaling {
   my ($option, $scale_string) = @_;
 
   die "Scales '$scale_string' are supposed to be numbers\n" 
-    if $scale_string !~ /\d|\s|\./;
-  $gen_parms{scales} = [ split /\s/, $scale_string ];
+    if $scale_string !~ /\d/;
+  $gen_parms{scales} = [ split /[\s,]+/, $scale_string ];
 }
 
 sub process_graphic_file {
@@ -139,7 +139,7 @@ __END__
 
 =head1 SYNOPSIS
 
-$0 filename1.pdf filename2.pdf etc.
+./make_ajax.pl filename1.pdf filename2.pdf etc.
 
 =head1 DESCRIPTION
 
@@ -153,12 +153,14 @@ necessary to support a google style map.
 Sets the scale factors for the renders. For example, 75%, 100%, 125% and 150% is
 represented as 
 
---scale='0.75 1 1.25 1.50'
+--scale=0.75,1,1.25,1.50
+
+Please, no spaces.
 
 =head2 --skip_render
 
 Skip the image rendering stage. Only do this if you know you have already 
-rendered the images. (Feature is unimplemented.)
+rendered the images. (Feature is dysfunctional.)
 
 =head2 --help
 
