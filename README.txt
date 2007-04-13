@@ -1,0 +1,24 @@
+README.TXT
+
+Your first step is to get a pdf file, like say Stanford's map.
+  http://www-facilities.stanford.edu/maps/download/VisitorMap.pdf
+
+We can also render jpeg, png, and gif, but these don't look very good unless
+the image is at least 2000 x 2000 resolution.
+
+To render a pdf
+  ./make_ajax.pl filename.pdf
+This will create a subdirectory. Within is an index.html that
+can be displayed in a web browser
+
+To render a directory full of pdf files, a la gallery style
+  ./make_ajax.pl pdf_directory
+
+To read up on other options
+  ./make_ajax.pl
+
+To run the gallery test case, fill the gallery_test subdirectory with 
+pdf files. Then
+
+  perl gallery_test.t
+
