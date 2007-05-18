@@ -1,19 +1,13 @@
 #!/usr/bin/perl -w
 
 use strict;
-use AjaxMapMaker;
+use AjaxMapMaker qw($mini_map_max_width $mini_map_max_height $mini_map_name);
 use Getopt::Long qw(:config gnu_getopt auto_help);
 use Pod::Usage;
 use Image::Info qw(image_type image_info dim);
 use Template;
-use Readonly;
 use Data::Dumper;
 use Cwd qw(cwd);
-
-# Copied from AjaxMapMaker.pm
-Readonly my $mini_map_max_width  => 200;
-Readonly my $mini_map_max_height => 200;
-Readonly my $mini_map_name => "mini_map.png";
 
 pod2usage (-verbose => 1) if !@ARGV;
 

@@ -2,7 +2,21 @@ package AjaxMapMaker;
 
 # Written by Lambert Lum (emceelam@warpmail.net)
 
+=head1 NAME
+
+AjaxMapMaker
+
+=head1 SYNOPSIS
+
+my $mapMaker = AjaxMapMaker->new(source_file, dest_dir);
+$mapMaker->generate();
+
+=cut
 use version; our $VERSION = qv('0.1');  # Must all be on same line
+require Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK
+  = qw ( $mini_map_max_width $mini_map_max_height $mini_map_name $tile_size);
 
 use strict;
 use Imager;
@@ -17,6 +31,7 @@ use Params::Validate qw(validate ARRAYREF BOOLEAN);
 use Math::Round qw(round);
 use Cwd;
 
+use vars qw{$tile_size $mini_map_max_width $mini_map_max_height $mini_map_name};
 Readonly my $tile_size => 256;
 Readonly my $mini_map_max_width  => 200;
 Readonly my $mini_map_max_height => 200;
