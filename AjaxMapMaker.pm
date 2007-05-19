@@ -31,11 +31,10 @@ use Params::Validate qw(validate ARRAYREF BOOLEAN);
 use Math::Round qw(round);
 use Cwd;
 
-use vars qw{$tile_size $mini_map_max_width $mini_map_max_height $mini_map_name};
-Readonly my $tile_size => 256;
-Readonly my $mini_map_max_width  => 200;
-Readonly my $mini_map_max_height => 200;
-Readonly my $mini_map_name => "mini_map.png";
+Readonly our $tile_size => 256;
+Readonly our $mini_map_max_width  => 200;
+Readonly our $mini_map_max_height => 200;
+Readonly our $mini_map_name => "mini_map.png";
 
 sub new {
   my ($class_name, $source_file, $dest_dir) = @_;

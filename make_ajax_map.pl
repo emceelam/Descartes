@@ -47,10 +47,7 @@ sub make_gallery {
   my @graphic_files = grep { m/jpeg|jpg|gif|png|pdf$/i } readdir DIR;
   closedir DIR;
 
-  my %thumb;
   my @thumbs;
-
-  my @gallery_thumbnails;
   foreach my $graphic_file (@graphic_files) {
     my $map_maker =
       AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
@@ -65,36 +62,19 @@ sub make_gallery {
     my($mini_map_width, $mini_map_height) = dim($info);
 
     push @thumbs, {
-      $generated_dir => {
-        src => "$image_dir/rendered/$mini_map_name",
-        full_view => "$image_dir/index.html",
-        caption => $graphic_file,
-        width => $mini_map_width,
-        height => $mini_map_height,
-      }
-    };
-    $thumb{$generated_dir} = {
-      src => $mini_map_file,
-      full_view => "$generated_dir/index.html",
+      src => "$image_dir/rendered/$mini_map_name",
+      full_view => "$image_dir/index.html",
       caption => $graphic_file,
       width => $mini_map_width,
       height => $mini_map_height,
     };
   }
 
-  my @row;
-  my @thumb_rows;
-  while (@thumbs)
-  {
-    @row = splice (@thumbs, 0, 3);
-    push @thumb_rows, [@row]; 
-  }
-
   my $tt = Template->new ();
   $tt->process(
         'gallery_index.html.tt',
         {
-          thumb_rows => \@thumb_rows,
+          thumbs => \@thumbs,
         },
         "$gallery_dir/index.html"
   );
