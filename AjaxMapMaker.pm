@@ -8,8 +8,10 @@ AjaxMapMaker
 
 =head1 SYNOPSIS
 
-my $mapMaker = AjaxMapMaker->new(source_file, dest_dir);
-$mapMaker->generate();
+AjaxMapMaker->new(source_file, dest_dir)->generate();
+
+source_file is a pdf, jpg, png or gif.
+dest_dir is optional, defaults to '.'.
 
 =cut
 use version; our $VERSION = qv('0.1');  # Must all be on same line
