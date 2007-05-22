@@ -1,3 +1,8 @@
+[%
+  zoom_button_offset = 12;
+  zoom_panel_width = 32;
+  zoom_panel_height = dimensions.size * zoom_button_offset + 5;
+-%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "DTD/xhtml1-transitional.dtd">
 <!-- AUTHOR: Emcee Lam -->
@@ -25,6 +30,30 @@
         border-bottom: 1px solid black;
         width: [% view_port_width %]px;
         background:#00cdcd; font: normal 8pt sans-serif;
+      }
+      #zoomPanel {
+        position: absolute;
+        left:5px;
+        top:5px;
+        border: thin solid black;
+        width: [% zoom_panel_width %]px;
+        height: [% zoom_panel_height %]px;
+        z-index:1;
+      }
+      #translucent {
+        width: [% zoom_panel_width %]px;
+        height: [% zoom_panel_height %]px;
+        background-color: blue;
+        filter:alpha(opacity=50);
+        -moz-opacity:0.50;
+        opacity: 0.50;
+      }
+      #opaque {
+        width: [% zoom_panel_width %]px;
+        height: [% zoom_panel_height %]px;
+        background-color: transparent;
+        position: absolute;
+        z-index: 2;
       }
       div.miniMap {
         position: absolute; left:550px; top:10px; border: solid black 1px;
@@ -176,7 +205,11 @@
         this.zoom = 0;
         this.zoomDim = [
           [% FOREACH dim = dimensions -%]
-            { width:[% dim.width %], height:[% dim.height %], scale:[% dim.scale %] },
+            {
+              width:[% dim.width %],
+              height:[% dim.height %],
+              scale:[% dim.scale %]
+            },
           [% END -%]
         ]
 
@@ -379,15 +412,22 @@
     <!-- main map -->
     <div>
       <div id="outerDiv">
-        [% FOREACH dim = dimensions %]
-          <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
-          <div style="position:absolute;
-                      top:[% (loop.index + 1) * 12 %]px; left:10px; z-index:1;
-                      width:20px; height:5px; font-size:10%;
-                      border:solid 1px blue; background:#d6e7ee"
-              onclick="mainMap.setZoom([% loop.index %])">
+        <div id="zoomPanel">
+          <div id="opaque">
+            [%- FOREACH dim = dimensions %]
+              <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
+              <div style="position:absolute;
+                          top:[% loop.index * zoom_button_offset + 5 %]px;
+                          left:5px;
+                          width:20px; height:5px; font-size:10%;
+                          border:solid 1px blue; background:#d6e7ee"
+                  onclick="mainMap.setZoom([% loop.index %])">
+              </div>
+            [%- END %]
           </div>
-        [%- END %]
+          <div id="translucent">
+          </div>
+        </div>
         <div id="innerDiv" style="z-index: 0">
         </div>
       </div>
