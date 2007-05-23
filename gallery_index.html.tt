@@ -14,7 +14,7 @@
       li {
         /* hack for Internet Explorer */
         /* with this command, gallery lines up in a column */
-        /*clear:both;*/
+        clear:both;
       }
       ul#gallery, #gallery ul {
         float:left;
@@ -29,6 +29,7 @@
         width:auto;
         height:auto;
         border:1px solid transparent;
+        clear:none;
       }
       ul#gallery>li ul{
         border: 1px solid black;
@@ -51,6 +52,10 @@
       ul#gallery img{
         display: block;
       }
+      div.thumbnail {
+        width:  [% mini_map_max_width %]px;
+        height: [% mini_map_max_height %]px;
+      }
     </style>
     <script type="text/javascript">
       //<![CDATA[
@@ -62,11 +67,13 @@
     <ul id="gallery">
       [% FOREACH thumb = thumbs %]
         <li>
-          <img src="[% thumb.src %]"
-              border="0"
-              width="[% thumb.width %]"
-              height="[% thumb.height %]"
-              alt="[% thumb.caption %]" />
+          <div class="thumbnail">
+            <img src="[% thumb.src %]"
+                border="0"
+                width="[% thumb.width %]"
+                height="[% thumb.height %]"
+                alt="[% thumb.caption %]" />
+          </div>
           <ul>
             <li>[% thumb.caption %]</li>
             <li>

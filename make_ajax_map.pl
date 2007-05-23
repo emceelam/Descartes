@@ -120,6 +120,8 @@ sub make_gallery {
         'gallery_index.html.tt',
         {
           thumbs => \@thumbs,
+          mini_map_max_width => $mini_map_max_width,
+          mini_map_max_height => $mini_map_max_height,
         },
         "$gallery_dir/index.html"
   );
