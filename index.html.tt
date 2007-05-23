@@ -58,6 +58,9 @@
       div.miniMap {
         position: absolute; left:550px; top:10px; border: solid black 1px;
       }
+      img {
+        display: block;  /* fix for IE */
+      }
     </style>
     <script type="text/javascript">
       //<![CDATA[
@@ -443,12 +446,12 @@
       </div>
       <div id="magnifier"
         style="position:absolute; left:0px; top:0px; z-index:1;
-               background:transparent; border: solid black 1px;">
+               background-color:transparent; border: solid black 1px;">
       </div>
     </div>
 
     <div style="position:absolute; left:550px; top:300px; width:250px;
-                border:black solid 1px; background:#d6e7ee;
+                border:black solid 1px; background-color:#d6e7ee;
                 font:normal 10pt serif;">
       <div style="padding-left:2px;">
         <p>
