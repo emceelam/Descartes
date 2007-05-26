@@ -10,7 +10,7 @@ AjaxMapMaker
 
 AjaxMapMaker->new(source_file, dest_dir)->generate();
 
-source_file is a pdf, jpg, png or gif.
+source_file is a pdf, jpg, png, gif, or tiff.
 dest_dir is optional, defaults to '.'.
 
 =cut
@@ -32,6 +32,10 @@ use File::Path qw(mkpath rmtree);
 use Params::Validate qw(validate ARRAYREF BOOLEAN);
 use Math::Round qw(round);
 use Cwd;
+use List::MoreUtils qw(firstval);
+use Carp qw(croak);
+use Storable qw(store retrieve);
+use Data::Dumper;
 
 Readonly our $tile_size => 256;
 Readonly our $mini_map_max_width  => 200;
@@ -39,7 +43,7 @@ Readonly our $mini_map_max_height => 200;
 Readonly our $mini_map_name => "mini_map.png";
 
 sub new {
-  my ($class_name, $source_file, $dest_dir) = @_;
+  my ($class_name, $source_file, $dest_dir, $catalog_file) = @_;
 
   my ($base_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
   $base_name =~ s/[^a-zA-Z0-9.\-]/_/g;
@@ -50,11 +54,10 @@ sub new {
   my $tiles_subdir = "tiles";
   my $start_dir = "$dest_dir/__processing";
   my $base_dir = "$start_dir/$base_name";
+  my $f_pdf = $file_ext eq 'pdf';
   my $self = {
-    pdf_name => $source_file,
     source_file_name => $source_file,
     source_file_ext  => $file_ext,
-    target_file_ext => ($file_ext eq 'pdf' ? 'png' : $file_ext),
     dest_dir => $dest_dir,
     dest_base => $dest_base,
     start_dir => $start_dir,
@@ -63,8 +66,49 @@ sub new {
     rendered_dir => "$base_dir/rendered",
     tiles_dir => "$base_dir/$tiles_subdir",
     tiles_subdir => $tiles_subdir,
+    f_pdf => $f_pdf,
   };
+
+  # target_file_ext
+  my %sourceFileExt_to_targetFileExt = (
+    pdf  => 'png',
+    tif  => 'png',
+    tiff => 'png',
+    gif  => 'gif',
+    jpg  => 'jpg',
+    jpeg => 'jpg',
+    png  => 'png',
+  );
+  $self->{target_file_ext} = $sourceFileExt_to_targetFileExt{ $file_ext };
+
+  # catalog_file
+  $catalog_file ||= "catalog.dat";
+  my $catalog;
+  if (-e $catalog_file) {
+    $catalog = retrieve($catalog_file) 
+      || croak "can not retrieve $catalog_file";
+  }
+  $self->{catalog_file} = $catalog_file;
+
+  # catalog_item
+  my $catalog_item = firstval {$_->{dir} eq $base_name} @$catalog;
+  if (!$catalog_item) {
+    $catalog_item = {
+      file => "$base_name.$file_ext",
+      dir  => $base_name,
+    };
+    push @$catalog, $catalog_item;   # $catalog autovivifies
+  }
+  $self->{catalog_item} = $catalog_item;
+  $self->{catalog} = $catalog;
+
   return bless $self, $class_name;
+}
+
+sub DESTROY {
+  my $self = shift;
+  store $self->{catalog}, $self->{catalog_file};
+  print "Now Storing catalog\n";
 }
 
 sub pdf_to_png {
@@ -72,8 +116,8 @@ sub pdf_to_png {
   my $base_dir = $self->{base_dir};
   my $base_name = $self->{base_name};
   my $rendered_dir = $self->{rendered_dir};
-  my $pdf_name = $self->{pdf_name};
-  my $scales = $self->{scales} || [1, 1.5, 2, 3];
+  my $pdf_name = $self->{source_file_name};
+  my $scales = $self->{scales};
   my $error;
   my $info;
   $self->{target_file_ext} = 'png';
@@ -101,6 +145,7 @@ sub pdf_to_png {
     print "rendered $dest_file_name\n";
     push @image_file_names, $dest_file_name;
   }
+  $self->{catalog_item}{scales} = $scales;
 
   return @image_file_names;
 }
@@ -155,7 +200,6 @@ sub tile_image {
 
 sub generate_javascript {
   my ($self, @file_names) = @_;
-  my $pdf_name = $self->{pdf_name};
   my $rendered_dir = $self->{rendered_dir};
   my $base_dir = $self->{base_dir};
   my $error;
@@ -220,7 +264,7 @@ sub zip_files {
 # and return the list of scaled raster images
 sub scale_raster_image {
   my $self = shift;
-  my $scales = $self->{scales} || [0.25, 0.5, 0.75, 1];
+  my $scales = $self->{scales};
   my $source_file = $self->{source_file_name};
   my $rendered_dir = $self->{rendered_dir};
   my $base_name = $self->{base_name};
@@ -228,11 +272,12 @@ sub scale_raster_image {
   my @file_names;
   my ($width, $height);
   my $scale;
+  my %scale_targets;
   my $dest_file_name;
 
   my $img = Imager->new;
   $img->read (file => $source_file)
-    || die "scale_raster_image:" . $img->errstr() . "\n";
+    || croak "scale_raster_image:" . $img->errstr() . "\n";
 
   foreach $scale (@$scales) {
     my $scaled_img = $img->scale(scalefactor => $scale);
@@ -252,6 +297,7 @@ sub scale_raster_image {
     }
     push @file_names, $dest_file_name;
   }
+  $self->{catalog_item}{scales} = $scales;
 
   return @file_names;
 }
@@ -289,13 +335,23 @@ sub generate {
     f_quiet => { type => BOOLEAN, default => 0 },
     f_skip_render => { type => BOOLEAN, default => 0 },
   } );
-  $self->{scales} = $p{scales};
 
-  mkpath ( [$self->{base_dir}, $self->{rendered_dir}, $self->{tiles_dir}] );
+  # scale settings
+  my $scales = $p{scales};
+  if (!$scales) {
+    $scales = $self->{f_pdf} ? [1, 1.5, 2, 3] : [0.25, 0.5, 0.75, 1];
+  }
+  $self->{scales} = $scales;
 
+  mkpath ( [
+    $self->{base_dir},
+    $self->{rendered_dir},
+    $self->{tiles_dir},
+    map { $self->{base_dir} . '/scale' . ($_ * 100) } @$scales,
+  ] );
   if (!$p{f_skip_render})
   {
-    if ($self->{source_file_name} =~ m/\.pdf$/) {
+    if ($self->{f_pdf}) {
       @file_names = $self->pdf_to_png ();
     }
     else {

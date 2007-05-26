@@ -2,6 +2,8 @@
   zoom_button_offset = 12;
   zoom_panel_width = 32;
   zoom_panel_height = dimensions.size * zoom_button_offset + 5;
+  zoom_panel_color = "blue";
+  zoom_button_color = "#c5eec5";
 -%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "DTD/xhtml1-transitional.dtd">
@@ -17,19 +19,25 @@
     <meta http-equiv="Content-Script-Type" content="text/javascript" />
     <style type="text/css">
       #outerDiv {
-        width: [% view_port_width %]px; height: [% view_port_height %]px; 
+        width: [% view_port_width %]px; height: [% view_port_height %]px;
         border: 1px solid black; position: relative;
         overflow: hidden;
       }
       #innerDiv {
-        position: relative; left: 0px; top: 0px;
+        position: relative;
+        left: 0px;
+        top: 0px;
+        z-index: 0;
       }
       #resolutionInfo {
         border-left: 1px solid black;
         border-right: 1px solid black;
         border-bottom: 1px solid black;
-        width: [% view_port_width %]px;
-        background:#00cdcd; font: normal 8pt sans-serif;
+        padding: 0px 2px;
+        width: [% view_port_width - 4 %]px;
+          /* 4 pixels shorter to compensate for 2px padding */
+        background:#00cdcd;
+        font: normal 10px sans-serif;
       }
       #zoomPanel {
         position: absolute;
@@ -43,10 +51,10 @@
       #translucent {
         width: [% zoom_panel_width %]px;
         height: [% zoom_panel_height %]px;
-        background-color: blue;
-        filter:alpha(opacity=50);
-        -moz-opacity:0.50;
-        opacity: 0.50;
+        background-color: [% zoom_panel_color %];
+        filter:alpha(opacity=0.15);
+        -moz-opacity:0.15;
+        opacity: 0.15;
       }
       #opaque {
         width: [% zoom_panel_width %]px;
@@ -335,8 +343,6 @@
         function (event) {
           this.innerDiv.style.cursor = "";
           this.f_dragging = false;
-  
-          //alert ("left: " + innerDiv.style.left + ", top: " + innerDiv.style.top);
         }
 
       // movement in the magnifier moves main map's view port
@@ -423,7 +429,8 @@
                           top:[% loop.index * zoom_button_offset + 5 %]px;
                           left:5px;
                           width:20px; height:5px; font-size:10%;
-                          border:solid 1px blue; background:#d6e7ee"
+                          border:solid 1px black;
+                          background: [% zoom_button_color %];"
                   onclick="mainMap.setZoom([% loop.index %])">
               </div>
             [%- END %]
@@ -431,7 +438,7 @@
           <div id="translucent">
           </div>
         </div>
-        <div id="innerDiv" style="z-index: 0">
+        <div id="innerDiv">
         </div>
       </div>
       <div id="resolutionInfo">

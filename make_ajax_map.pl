@@ -9,6 +9,7 @@ use Template;
 use Data::Dumper;
 use Cwd qw(cwd);
 use Text::Wrap qw(wrap);
+use Storable qw(store retrieve);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -82,9 +83,10 @@ sub make_gallery {
     };
     return;
   }
-  my @graphic_files = grep { m/jpeg|jpg|gif|png|pdf$/i } readdir DIR;
+  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } readdir DIR;
   closedir DIR;
 
+  #my @stor;
   my @thumbs;
   GRAPHIC_FILE:
   foreach my $graphic_file (@graphic_files) {
@@ -93,6 +95,7 @@ sub make_gallery {
       AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
     my $image_dir = $map_maker->generate(@gen_parms);
     my $generated_dir = "$gallery_dir/$image_dir";
+    #push @stor, { dir => $image_dir };
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
     my $info = image_info ($mini_map_file);
@@ -114,6 +117,7 @@ sub make_gallery {
       height => $mini_map_height,
     };
   }
+  #store \@stor, "$gallery_dir/catalog.dat";
 
   my $tt = Template->new ();
   $tt->process(
@@ -157,10 +161,11 @@ sub process_graphic_file {
       return;
     }
 
-    if ($type->{file_type} !~ m/GIF|PNG|JPEG/) {
+    my $file_type = $type->{file_type};
+    if ($file_type !~ m/GIF|PNG|JPEG|TIFF/) {
       push @problem_files, {
         file => $source,
-        error => "Not pdf, png, gif or jpg",
+        error => "file type '$file_type': Not pdf, png, gif, tiff or jpg",
       };
       return;
     }

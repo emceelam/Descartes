@@ -29,7 +29,7 @@ foreach my $graphic_file (@graphic_files)
   ok (closedir (RENDERED_DIR),
     "closed $gallery_dir/$graphic_file/rendered");
   ok (-f "$gallery_dir/$graphic_file/rendered/mini_map.png",
-    "$graphic_file/rendered/mini_map.png exist");
+    "$graphic_file/rendered/mini_map.png exists");
   my @scaled_images = grep { m/^w\d+_h\d+_scale\d+/ } @renders;
   @scaled_images =
     sort {
@@ -56,3 +56,5 @@ ok (-f "$gallery_dir/index.html",
   "$gallery_dir/index.html exist");
 ok (-M "$gallery_dir/index.html" < 0,
   "$gallery_dir/index.html generated recently");
+#ok (-e "$gallery_dir/catalog.dat",
+#  "$graphic_file/catalog.dat exists");
