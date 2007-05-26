@@ -4,6 +4,7 @@
   zoom_panel_height = dimensions.size * zoom_button_offset + 5;
   zoom_panel_color = "blue";
   zoom_button_color = "#c5eec5";
+  magnifier_color = "black";
 -%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "DTD/xhtml1-transitional.dtd">
@@ -62,6 +63,10 @@
         background-color: transparent;
         position: absolute;
         z-index: 2;
+      }
+      #magnifier {
+        position:absolute; left:0px; top:0px; z-index:1;
+        background-color:transparent; border: solid [% magnifier_color %] 1px;
       }
       div.miniMap {
         position: absolute; left:550px; top:10px; border: solid black 1px;
@@ -215,13 +220,13 @@
 
         this.zoom = 0;
         this.zoomDim = [
-          [% FOREACH dim = dimensions -%]
+          [%- FOREACH dim = dimensions %]
             {
               width:[% dim.width %],
               height:[% dim.height %],
               scale:[% dim.scale %]
             },
-          [% END -%]
+          [%- END %]
         ]
 
         var zoomElt = this.zoomDim[this.zoom];
@@ -284,22 +289,25 @@
           var tileSize = this.tileSize;
           var visibleTiles = this.getVisibleTiles();
           var visibleTilesMap = {};
+          var i;
   
           //alert ("visibleTiles.length: " + visibleTiles.length);
   
+          var scale = this.zoomDim[this.zoom].scale;
           for (i=0;i<visibleTiles.length; i++) {
-            var tileArray = visibleTiles[i];
-            var tileName 
-              = "x" + tileArray[0] + "y" + tileArray[1] + "z" + this.zoom;
+            var tile = visibleTiles[i];
+            var xy = "x" + tile.x + "y" + tile.y;
+            var tileName
+              =  xy + "z" + this.zoom;
             visibleTilesMap[tileName] = true;
             var img = document.getElementById (tileName);
             if (!img) {
               img = document.createElement("img");
               img.src 
-                = "[% tiles_subdir %]/" + tileName + ".[% tile_file_ext %]";
+                = "scale" + scale + "/" + xy + ".[% tile_file_ext %]";
               img.style.position = "absolute";
-              img.style.left = (tileArray[0] * tileSize) + "px";
-              img.style.top = (tileArray[1] * tileSize) + "px";
+              img.style.left = (tile.x * tileSize) + "px";
+              img.style.top = (tile.y * tileSize) + "px";
               img.setAttribute("id", tileName);
               innerDiv.appendChild(img);
             }
@@ -329,14 +337,17 @@
           var tilesX = Math.ceil(this.viewPortWidth / tileSize) + 1;
           var tilesY = Math.ceil(this.viewPortHeight / tileSize) + 1;
   
-          var visibleTileArray = [];
+          var visibleTiles = [];
           var counter = 0;
           for (x = startX; x < (tilesX + startX); x++) {
             for (y = startY; y < (tilesY + startY); y++) {
-              visibleTileArray[counter++] = [x,y];
+              var tile = {};
+              tile.x = x;
+              tile.y = y;
+              visibleTiles[counter++] = tile;
             }
           }
-          return visibleTileArray;
+          return visibleTiles;
         }
 
       MainMap.prototype.stopMove =
@@ -451,12 +462,11 @@
         <img src="rendered/mini_map.png" alt="mini map" border="0"
           style="width:[% mini_map_width %]px; height:[% mini_map_height %]px;" />
       </div>
-      <div id="magnifier"
-        style="position:absolute; left:0px; top:0px; z-index:1;
-               background-color:transparent; border: solid black 1px;">
+      <div id="magnifier">
       </div>
     </div>
 
+    <!-- informational box -->
     <div style="position:absolute; left:550px; top:300px; width:250px;
                 border:black solid 1px; background-color:#d6e7ee;
                 font:normal 10pt serif;">

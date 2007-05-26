@@ -111,6 +111,11 @@ sub DESTROY {
   print "Now Storing catalog\n";
 }
 
+# Render the current pdf into multiple scales and
+# return the scales and file names.
+#   [ [ scale1, filename1 ],
+#     [ scale2, filename2 ],
+#     ... ]
 sub pdf_to_png {
   my $self = shift;
   my $base_dir = $self->{base_dir};
@@ -120,9 +125,8 @@ sub pdf_to_png {
   my $scales = $self->{scales};
   my $error;
   my $info;
+  my @scale_and_files;
   $self->{target_file_ext} = 'png';
-
-  my @image_file_names;
 
   # render at different resolutions
   # at scale 100%, monitor resolution is 72dpi
@@ -143,11 +147,11 @@ sub pdf_to_png {
       "w${width}_h${height}_scale${percent_scale}.png";
     rename "$rendered_dir/$base_name.png", "$rendered_dir/$dest_file_name";
     print "rendered $dest_file_name\n";
-    push @image_file_names, $dest_file_name;
+    push @scale_and_files, [ $scale, $dest_file_name ];
   }
   $self->{catalog_item}{scales} = $scales;
 
-  return @image_file_names;
+  return \@scale_and_files;
 }
 
 sub create_mini_map {
@@ -165,14 +169,14 @@ sub create_mini_map {
 }
 
 sub tile_image {
-  my ($self, $file_name, $z)  = @_;
+  my ($self, $scale, $file_name)  = @_;
 
   my $rendered_dir = $self->{rendered_dir};
-  my $tiles_dir = $self->{tiles_dir};
+  my $base_dir = $self->{base_dir};
   my $base_name = $self->{base_name};
   my $file_ext = $self->{target_file_ext};
   my ($img_width, $img_height) =
-    $file_name =~ m/w(\d+)_h(\d+)_scale(\d+)\.(?:png|gif|jpg)$/;
+    $file_name =~ m/w(\d+)_h(\d+)_scale(?:\d+)\.(?:png|gif|jpg)$/;
   print "$base_name, $img_width, $img_height\n";
   my $img = Imager->new;
   $img->read (file => "$rendered_dir/$file_name")
@@ -182,12 +186,13 @@ sub tile_image {
   my $max_y = $img_height / $tile_size;
   my $max_x = $img_width  / $tile_size;
   for   (my $y=0; $y < $max_y; $y++) {
+    my $scale_dir = "$base_dir/scale" . ($scale * 100);
     for (my $x=0; $x < $max_x;  $x++) {
       my $tile_img = $img->crop (
                        left => $x * $tile_size, top => $y * $tile_size,
                        width=> $tile_size, height => $tile_size);
       my $tile_name =
-        "$tiles_dir/x$x" . "y$y" ."z$z" . ".$file_ext";
+        "$scale_dir/x$x" . "y$y" . ".$file_ext";
       $tile_img->write (file => $tile_name)
         || die "Cannot write tile $tile_name: ". $tile_img->errstr();
       $tile_cnt++;
@@ -198,7 +203,7 @@ sub tile_image {
   print "Total tiles written: $tile_cnt\n";
 }
 
-sub generate_javascript {
+sub generate_html {
   my ($self, @file_names) = @_;
   my $rendered_dir = $self->{rendered_dir};
   my $base_dir = $self->{base_dir};
@@ -208,7 +213,7 @@ sub generate_javascript {
 
   foreach my $file_name (@file_names) {
     my ($width, $height, $scale) =
-      $file_name =~ m/w(\d+)_h(\d+)_scale(\d+)\.(?:jpg|png|gif)$/;
+      $file_name =~ m/w(\d+)_h(\d+)_scale[0]*(\d+)\.(?:jpg|png|gif)$/;
     push @dimensions, { width => $width, height => $height, scale => $scale };
   }
   $info = image_info("$rendered_dir/$mini_map_name");
@@ -261,7 +266,10 @@ sub zip_files {
 }
 
 # scale a raster image, save the scaled images
-# and return the list of scaled raster images
+# and return the scales and file names.
+#   [ [ scale1, filename1 ],
+#     [ scale2, filename2 ],
+#     ... ]
 sub scale_raster_image {
   my $self = shift;
   my $scales = $self->{scales};
@@ -269,10 +277,9 @@ sub scale_raster_image {
   my $rendered_dir = $self->{rendered_dir};
   my $base_name = $self->{base_name};
   my $file_ext = $self->{target_file_ext};
-  my @file_names;
   my ($width, $height);
   my $scale;
-  my %scale_targets;
+  my @scale_and_files;
   my $dest_file_name;
 
   my $img = Imager->new;
@@ -295,11 +302,11 @@ sub scale_raster_image {
       $scaled_img->write (file => "$rendered_dir/$dest_file_name")
         or die $scaled_img->errstr;
     }
-    push @file_names, $dest_file_name;
+    push @scale_and_files, [$scale, $dest_file_name];
   }
   $self->{catalog_item}{scales} = $scales;
 
-  return @file_names;
+  return \@scale_and_files;
 }
 
 sub move_generated_files_to_final_directory {
@@ -330,6 +337,7 @@ returns the directory where generated files reside
 sub generate {
   my $self = shift;
   my @file_names;
+  my $scale_and_files;
   my %p = validate ( @_, {
     scales => { type => ARRAYREF, optional => 1 },
     f_quiet => { type => BOOLEAN, default => 0 },
@@ -346,25 +354,26 @@ sub generate {
   mkpath ( [
     $self->{base_dir},
     $self->{rendered_dir},
-    $self->{tiles_dir},
     map { $self->{base_dir} . '/scale' . ($_ * 100) } @$scales,
   ] );
   if (!$p{f_skip_render})
   {
     if ($self->{f_pdf}) {
-      @file_names = $self->pdf_to_png ();
+      $scale_and_files = $self->pdf_to_png ();
     }
     else {
-      @file_names = $self->scale_raster_image ();
+      $scale_and_files = $self->scale_raster_image ();
     }
-    foreach my $i (0 .. $#file_names) {
-      $self->tile_image ($file_names[$i], $i);
+    @file_names = map { $_->[1] } @$scale_and_files;
+    foreach my $row (@$scale_and_files) {
+      my ($scale, $file_name) = @$row;
+      $self->tile_image ($scale, $file_name);
     }
-    $self->create_mini_map ($file_names[-1]);   
+    $self->create_mini_map ($file_names[-1]);
       # Create a mini map based on the last file. Last is typically largest.
   }
 
-  $self->generate_javascript (@file_names);
+  $self->generate_html (@file_names);
   $self->zip_files ();
   $self->move_generated_files_to_final_directory();
 

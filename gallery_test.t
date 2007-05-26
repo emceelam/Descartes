@@ -7,9 +7,9 @@ use List::MoreUtils qw(any);
 system q { perl make_ajax_map.pl --scale="1" gallery_test };
 
 my $gallery_dir = "gallery_test";
-ok (opendir(DIR, $gallery_dir), "open $gallery_dir directory");
-my @all_files = readdir(DIR);
-ok (closedir(DIR), "closed $gallery_dir directory");;
+ok (opendir(my $dir_handle, $gallery_dir), "open $gallery_dir directory");
+my @all_files = readdir($dir_handle);
+ok (closedir($dir_handle), "closed $gallery_dir directory");;
 
 my @graphic_files = grep { m/pdf|png|gif|jpg/i } @all_files;
 ok (@graphic_files, "QA tester needs graphic files in $gallery_dir");
@@ -23,10 +23,10 @@ foreach my $graphic_file (@graphic_files)
   # Renders
   ok (-M "$gallery_dir/$graphic_file" < 0, 
     "Built $graphic_file directory during this script's run");
-  ok (opendir (RENDERED_DIR, "$gallery_dir/$graphic_file/rendered"),
+  ok (opendir (my $rendered_dir_handle, "$gallery_dir/$graphic_file/rendered"),
     "opened $gallery_dir/$graphic_file/rendered");
-  my @renders = readdir (RENDERED_DIR);
-  ok (closedir (RENDERED_DIR),
+  my @renders = readdir ($rendered_dir_handle);
+  ok (closedir ($rendered_dir_handle),
     "closed $gallery_dir/$graphic_file/rendered");
   ok (-f "$gallery_dir/$graphic_file/rendered/mini_map.png",
     "$graphic_file/rendered/mini_map.png exists");
@@ -37,17 +37,17 @@ foreach my $graphic_file (@graphic_files)
       my ($b_scale) = $b =~ /scale(\d+)/;
       $a_scale <=> $b_scale
       } @scaled_images;
-  print map {"$_\n"} @scaled_images;
+  diag map {"$_\n"} @scaled_images;
+  ok (@scaled_images, "At least one render");
 
-  # Tiles
-  ok (opendir (TILES_DIR, "$gallery_dir/$graphic_file/tiles"),
-    "opened $graphic_file/tiles directory");
-  my @tiles = readdir (TILES_DIR);
-  ok (closedir (TILES_DIR),
-    "closed $graphic_file/tiles directory");
-
-  print scalar(@tiles) . " tiles found\n";
-  ok ( (any { m/^x0y0z0\./ } @tiles), "x0y0z0 tile exist" );
+  # Scales
+  my $scale_dir = "$gallery_dir/$graphic_file/scale100";
+  ok (opendir (my $scales_dir_handle, $scale_dir),
+      "opened $scale_dir");
+  my @tiles = readdir ($scales_dir_handle);
+  ok (closedir ($scales_dir_handle), "closed $scale_dir");
+  diag scalar(@tiles) . " tiles found\n";
+  ok ( (any { m/^x0y0\./ } @tiles), "x0y0 tile exist" );
 }
 
 ok (-d "$gallery_dir/__processing", 
