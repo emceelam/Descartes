@@ -1,19 +1,5 @@
 package AjaxMapMaker;
 
-# Written by Lambert Lum (emceelam@warpmail.net)
-
-=head1 NAME
-
-AjaxMapMaker
-
-=head1 SYNOPSIS
-
-AjaxMapMaker->new(source_file, dest_dir)->generate();
-
-source_file is a pdf, jpg, png, gif, or tiff.
-dest_dir is optional, defaults to '.'.
-
-=cut
 use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;
 @ISA = qw(Exporter);
@@ -382,3 +368,21 @@ sub generate {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+AjaxMapMaker
+
+=head1 SYNOPSIS
+
+AjaxMapMaker->new(source_file, dest_dir)->generate();
+
+source_file is a pdf, jpg, png, gif, or tiff.
+dest_dir is optional, defaults to '.'.
+
+=head1 AUTHOR
+
+# Written by Lambert Lum (emceelam@warpmail.net)
+

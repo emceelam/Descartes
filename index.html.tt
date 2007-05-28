@@ -127,6 +127,9 @@
           return false;
         }
 
+      /* As you drag the mouse in the mini map, the magnifier responds by
+         moving. Likewise, the main map will show the current area
+         enclosed by the magnifier. */
       Magnifier.prototype.processMove =
         function (event) {
           var magnifierDiv = this.div;
@@ -135,9 +138,13 @@
           if (this.f_dragging) {
   
             var minX = 0;
-            var maxX = [% mini_map_width %]  - atoi(magnifierDiv.style.width);
+            var maxX 
+              = [% mini_map_width %]  - (atoi(magnifierDiv.style.width) + 2);
+                /* +2 because the borders are 1 pixel each */
             var minY = 0;
-            var maxY = [% mini_map_height %] - atoi(magnifierDiv.style.height);
+            var maxY 
+              = [% mini_map_height %] - (atoi(magnifierDiv.style.height) + 2);
+                /* +2 because the borders are 1 pixel each */
   
             var shiftedLeft = this.left + (event.clientX - this.dragStartLeft);
             if (shiftedLeft < minX) shiftedLeft = minX; // map is not infinite
@@ -168,9 +175,11 @@
       Magnifier.prototype.setSize =
         function (innerDivWidth, innerDivHeight) {
           var magnifierWidth
-            = Math.round([% view_port_width  * mini_map_width  %] / innerDivWidth);
+            = Math.round([% view_port_width  * mini_map_width  %] / innerDivWidth) - 2;
+            /* We subtract 2 because the borders are 1 pixel each */
           var magnifierHeight
-            = Math.round([% view_port_height * mini_map_height %] / innerDivHeight);
+            = Math.round([% view_port_height * mini_map_height %] / innerDivHeight) - 2;
+            /* We subtract 2 because the borders are 1 pixel each */
           var magnifierDiv = document.getElementById("magnifier");
           magnifierDiv.style.width  = magnifierWidth  + "px";
           magnifierDiv.style.height = magnifierHeight + "px";
@@ -363,16 +372,21 @@
           var innerDiv = this.innerDiv;
           var magLeft        = atoi(magDiv.style.left);
           var magTop         = atoi(magDiv.style.top);
-          var magWidth       = atoi(magDiv.style.width);
-          var magHeight      = atoi(magDiv.style.height);
           var innerDivWidth  = atoi(innerDiv.style.width);
           var innerDivHeight = atoi(innerDiv.style.height);
   
+          /* set innerDivLeft */
+          var innerDivLeftMin = [% view_port_width %] - innerDivWidth;
           var innerDivLeft
             = Math.round((-magLeft) * innerDivWidth  / [% mini_map_width  %]);
+          if (innerDivLeft < innerDivLeftMin) innerDivLeft = innerDivLeftMin;
+          innerDiv.style.left = innerDivLeft + "px";
+
+          /* set innerDivTop */
+          var innerDivTopMin = [% view_port_height %] - innerDivHeight;
           var innerDivTop
             = Math.round((-magTop)  * innerDivHeight / [% mini_map_height %]);
-          innerDiv.style.left = innerDivLeft + "px";
+          if (innerDivTop < innerDivTopMin) innerDivTop = innerDivTopMin;
           innerDiv.style.top  = innerDivTop  + "px";
   
           this.checkTiles();
