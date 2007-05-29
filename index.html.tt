@@ -53,7 +53,7 @@
         width: [% zoom_panel_width %]px;
         height: [% zoom_panel_height %]px;
         background-color: [% zoom_panel_color %];
-        filter:alpha(opacity=0.15);
+        filter:alpha(opacity=15);
         -moz-opacity:0.15;
         opacity: 0.15;
       }
@@ -67,6 +67,7 @@
       #magnifier {
         position:absolute; left:0px; top:0px; z-index:1;
         background-color:transparent; border: solid [% magnifier_color %] 1px;
+        font-size: 0px; /* hack for IE6 */
       }
       div.miniMap {
         position: absolute; left:550px; top:10px; border: solid black 1px;
@@ -120,8 +121,8 @@
           this.dragStartTop  = event.clientY;
           magnifierDiv.style.cursor = "move";
   
-          this.top  = atoi(magnifierDiv.style.top);
-          this.left = atoi(magnifierDiv.style.left);
+          this.top  = magnifierDiv.offsetTop;
+          this.left = magnifierDiv.offsetLeft;
   
           this.f_dragging = true;
           return false;
@@ -138,13 +139,9 @@
           if (this.f_dragging) {
   
             var minX = 0;
-            var maxX 
-              = [% mini_map_width %]  - (atoi(magnifierDiv.style.width) + 2);
-                /* +2 because the borders are 1 pixel each */
+            var maxX = [% mini_map_width %]  - magnifierDiv.offsetWidth;
             var minY = 0;
-            var maxY 
-              = [% mini_map_height %] - (atoi(magnifierDiv.style.height) + 2);
-                /* +2 because the borders are 1 pixel each */
+            var maxY = [% mini_map_height %] - magnifierDiv.offsetHeight;
   
             var shiftedLeft = this.left + (event.clientX - this.dragStartLeft);
             if (shiftedLeft < minX) shiftedLeft = minX; // map is not infinite
@@ -190,8 +187,8 @@
           var innerDiv = document.getElementById("innerDiv");
           var innerDivWidth  = atoi(innerDiv.style.width);
           var innerDivHeight = atoi(innerDiv.style.height);
-          var innerDivLeft   = atoi(innerDiv.style.left);
-          var innerDivTop    = atoi(innerDiv.style.top);
+          var innerDivLeft   = innerDiv.offsetLeft;
+          var innerDivTop    = innerDiv.offsetTop;
           this.left
             = Math.round(Math.abs(innerDivLeft) * [% mini_map_width %] 
               / innerDivWidth);
@@ -254,8 +251,8 @@
           var innerDiv = this.innerDiv;
           innerDiv.style.cursor = "move";
   
-          this.top = atoi(innerDiv.style.top);
-          this.left = atoi(innerDiv.style.left);
+          this.top  = innerDiv.offsetTop;
+          this.left = innerDiv.offsetLeft;
   
           this.f_dragging = true;
           return false;
@@ -335,8 +332,8 @@
       MainMap.prototype.getVisibleTiles =
         function () {
           var innerDiv = this.innerDiv;
-          var mapX = atoi(innerDiv.style.left);
-          var mapY = atoi(innerDiv.style.top);
+          var mapX = innerDiv.offsetLeft;
+          var mapY = innerDiv.offsetTop;
           var tileSize = this.tileSize;
   
           var startX = Math.abs(Math.floor(mapX / tileSize)) - 1;
@@ -370,8 +367,8 @@
         function () {
           var magDiv   = document.getElementById("magnifier");
           var innerDiv = this.innerDiv;
-          var magLeft        = atoi(magDiv.style.left);
-          var magTop         = atoi(magDiv.style.top);
+          var magLeft        = magDiv.offsetLeft;
+          var magTop         = magDiv.offsetTop;
           var innerDivWidth  = atoi(innerDiv.style.width);
           var innerDivHeight = atoi(innerDiv.style.height);
   
@@ -417,8 +414,8 @@
             innerDiv.removeChild(imgs[0]);
           }
 
-          var oldLeft   = atoi(innerDiv.style.left);
-          var oldTop    = atoi(innerDiv.style.top);
+          var oldLeft   = innerDiv.offsetLeft;
+          var oldTop    = innerDiv.offsetTop;
 
           var newLeft = Math.round(newZ.width  * oldLeft / oldZ.width);
           var newTop  = Math.round(newZ.height * oldTop  / oldZ.height);
@@ -453,7 +450,8 @@
               <div style="position:absolute;
                           top:[% loop.index * zoom_button_offset + 5 %]px;
                           left:5px;
-                          width:20px; height:5px; font-size:10%;
+                          width:20px; height:5px;
+                          font-size: 0px;
                           border:solid 1px black;
                           background: [% zoom_button_color %];"
                   onclick="mainMap.setZoom([% loop.index %])">
