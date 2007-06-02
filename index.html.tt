@@ -44,7 +44,7 @@
         position: absolute;
         left:5px;
         top:5px;
-        border: thin solid black;
+        border: 1px solid black;
         width: [% zoom_panel_width %]px;
         height: [% zoom_panel_height %]px;
         z-index:1;
@@ -185,8 +185,8 @@
       Magnifier.prototype.setPosition =
         function () {
           var innerDiv = document.getElementById("innerDiv");
-          var innerDivWidth  = atoi(innerDiv.style.width);
-          var innerDivHeight = atoi(innerDiv.style.height);
+          var innerDivWidth  = innerDiv.clientWidth;
+          var innerDivHeight = innerDiv.clientHeight;
           var innerDivLeft   = innerDiv.offsetLeft;
           var innerDivTop    = innerDiv.offsetTop;
           this.left
@@ -369,8 +369,8 @@
           var innerDiv = this.innerDiv;
           var magLeft        = magDiv.offsetLeft;
           var magTop         = magDiv.offsetTop;
-          var innerDivWidth  = atoi(innerDiv.style.width);
-          var innerDivHeight = atoi(innerDiv.style.height);
+          var innerDivWidth  = innerDiv.clientWidth;
+          var innerDivHeight = innerDiv.clientHeight;
   
           /* set innerDivLeft */
           var innerDivLeftMin = [% view_port_width %] - innerDivWidth;

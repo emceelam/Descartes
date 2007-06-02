@@ -15,12 +15,13 @@ use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
 use File::Path qw(mkpath rmtree);
-use Params::Validate qw(validate ARRAYREF BOOLEAN);
+use Params::Validate qw(validate ARRAYREF BOOLEAN SCALAR);
 use Math::Round qw(round);
 use Cwd;
 use List::MoreUtils qw(firstval);
 use Carp qw(croak);
 use Storable qw(store retrieve);
+use File::Touch qw(touch);
 use Data::Dumper;
 
 Readonly our $tile_size => 256;
@@ -38,15 +39,13 @@ sub new {
   $dest_dir =~ s|/$||;
   my $dest_base = "$dest_dir/$base_name";
   my $tiles_subdir = "tiles";
-  my $start_dir = "$dest_dir/__processing";
-  my $base_dir = "$start_dir/$base_name";
+  my $base_dir = "$dest_dir/$base_name";
   my $f_pdf = $file_ext eq 'pdf';
   my $self = {
     source_file_name => $source_file,
     source_file_ext  => $file_ext,
     dest_dir => $dest_dir,
     dest_base => $dest_base,
-    start_dir => $start_dir,
     base_dir => $base_dir,
     base_name => $base_name,
     rendered_dir => "$base_dir/rendered",
@@ -113,22 +112,32 @@ sub pdf_to_png {
   my $info;
   my @scale_and_files;
   $self->{target_file_ext} = 'png';
+  my @renders;
+  my $scale;
+  my %seen;
+
+  my $render_and_files = get_previous_scale_renders($pdf_name, $rendered_dir);
+  @renders = map { $_->[0] } @$render_and_files;
+  @seen{@renders} = ();
+  my @unrendered_scales = grep { !exists $seen{$_} } @$scales;
 
   # render at different resolutions
   # at scale 100%, monitor resolution is 72dpi
-  foreach my $scale (@$scales) {
+  foreach $scale (@unrendered_scales) {
     my $dpi = round($scale * 72);
+    my $output_name = "$rendered_dir/$base_name.png";
+
     system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
               "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
               "-dFirstPage=1 -dLastPage=1 -r$dpi " .
               "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
-              "-sOutputFile=$rendered_dir/$base_name.png $pdf_name");
-    $info = image_info ("$rendered_dir/$base_name.png");
-    if ($error = $info->{error}) {
-      die "Can't parse image info: $error";
-    }
+              "-sOutputFile=$output_name $pdf_name");
+
+    $info = image_info ($output_name);
+    croak "Can't parse image info for $output_name: $error"
+      if ($error = $info->{error});
     my ($width, $height) = dim ($info);
-    my $percent_scale = sprintf "%03d", $scale * 100;
+    my $percent_scale = $scale * 100;
     my $dest_file_name =
       "w${width}_h${height}_scale${percent_scale}.png";
     rename "$rendered_dir/$base_name.png", "$rendered_dir/$dest_file_name";
@@ -137,12 +146,19 @@ sub pdf_to_png {
   }
   $self->{catalog_item}{scales} = $scales;
 
-  return \@scale_and_files;
+  return [sort { $a->[0] <=> $b->[0] } (@$render_and_files, @scale_and_files)];
 }
 
 sub create_mini_map {
   my ($self, $file_name) = @_;
   my $rendered_dir = $self->{rendered_dir};
+
+  return if is_up_to_date(
+                  source => "$rendered_dir/$file_name",
+                  target => "$rendered_dir/$mini_map_name",
+                );
+
+  print "Create $mini_map_name based on $file_name\n";
   my $img = Imager->new();
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
@@ -159,6 +175,16 @@ sub tile_image {
 
   my $rendered_dir = $self->{rendered_dir};
   my $base_dir = $self->{base_dir};
+  my $scale_dir = "$base_dir/scale" . ($scale * 100);
+
+  if (is_up_to_date (
+        source => "$rendered_dir/$file_name", target => $scale_dir)) {
+    print "Already rendered $scale_dir\n";
+    return;
+  }
+  mkpath ($scale_dir,1);
+
+  # More variable initialization
   my $base_name = $self->{base_name};
   my $file_ext = $self->{target_file_ext};
   my ($img_width, $img_height) =
@@ -168,11 +194,11 @@ sub tile_image {
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr;
 
+  # Make the tiles
   my $tile_cnt = 0;
   my $max_y = $img_height / $tile_size;
   my $max_x = $img_width  / $tile_size;
   for   (my $y=0; $y < $max_y; $y++) {
-    my $scale_dir = "$base_dir/scale" . ($scale * 100);
     for (my $x=0; $x < $max_x;  $x++) {
       my $tile_img = $img->crop (
                        left => $x * $tile_size, top => $y * $tile_size,
@@ -186,6 +212,7 @@ sub tile_image {
     print "Finished row $y. Tiles written so far: $tile_cnt\n"
       if ($y & 0x1) == 0;   # even rows only
   }
+  touch($scale_dir);
   print "Total tiles written: $tile_cnt\n";
 }
 
@@ -203,6 +230,8 @@ sub generate_html {
     push @dimensions, { width => $width, height => $height, scale => $scale };
   }
   $info = image_info("$rendered_dir/$mini_map_name");
+  croak ("image_info failed: " . $info->{error}) 
+    if $info->{error};
   my ($mini_map_width, $mini_map_height) = dim($info);
 
   my $tt = Template->new ();
@@ -230,25 +259,27 @@ sub zip_files {
   my $base_dir = $base_name;
   my $zip = Archive::Zip->new();
   my $cwd = cwd();
-  my $start_dir = $self->{start_dir};
 
-  chdir("$cwd/$start_dir") || die "zip_files could not chdir\n";
+  print "creating zip archive\n";
+  chdir("$cwd/$dest_dir") || die "zip_files could not chdir\n";
   die "At ". cwd(). ", where is directory $base_dir?"
     if !-d $base_dir;
+  unlink "$base_dir/$base_name.zip";
 
-  find ( {
-    wanted => sub { $File::Find::dir !~ m/rendered$/ &&
-                      $zip->addFileOrDirectory($_) },
-    no_chdir => 1
-  }, $base_dir);
+  find (
+    {
+      wanted => sub { $File::Find::dir !~ m/rendered$/ &&
+                        $zip->addFileOrDirectory($_) },
+      no_chdir => 1
+    },
+    $base_dir
+  );
   $zip->addFile("$base_dir/rendered/mini_map.png");
-  unless ($zip->writeToFileNamed("$base_name.zip") == AZ_OK) {
-    die "$base_name.zip write error";
+  unless ($zip->writeToFileNamed("$base_dir/$base_name.zip") == AZ_OK) {
+    croak "$base_name.zip write error";
   }
-  move "$base_name.zip", $base_dir ||
-   die "At ". cwd() . ", Could not move zip file: $!";
 
-  chdir $cwd;
+  chdir $cwd;  # back to the original directory
 }
 
 # scale a raster image, save the scaled images
@@ -268,15 +299,25 @@ sub scale_raster_image {
   my @scale_and_files;
   my $dest_file_name;
 
-  my $img = Imager->new;
-  $img->read (file => $source_file)
-    || croak "scale_raster_image:" . $img->errstr() . "\n";
+  my $render_and_files
+        = get_previous_scale_renders ($source_file, $rendered_dir);
+  my %seen;
+  my @renders = map {$_->[0]} @$render_and_files;
+  @seen{@renders} = ();
+  my @unrendered_scales = grep { !exists $seen{$_} } @$scales;
 
-  foreach $scale (@$scales) {
+  my $img;
+  if (@unrendered_scales) {
+    $img = Imager->new;
+    $img->read (file => $source_file)
+      || croak "scale_raster_image:" . $img->errstr() . "\n";
+  }
+
+  foreach $scale (@unrendered_scales) {
     my $scaled_img = $img->scale(scalefactor => $scale);
     ($width, $height) = ($scaled_img->getwidth(), $scaled_img->getheight());
     $dest_file_name = "w${width}_h${height}_scale"
-      . sprintf ("%03d", $scale * 100) . ".$file_ext";
+      . $scale * 100 . ".$file_ext";
 
     if ($scale == 1) {
       print "Copied $dest_file_name\n";
@@ -290,19 +331,8 @@ sub scale_raster_image {
     }
     push @scale_and_files, [$scale, $dest_file_name];
   }
-  $self->{catalog_item}{scales} = $scales;
 
-  return \@scale_and_files;
-}
-
-sub move_generated_files_to_final_directory {
-  my $self = shift;
-
-  my $dest   = cwd() . '/' . $self->{dest_base};
-  my $source = cwd() . '/' . $self->{base_dir};
-
-  rmtree $dest;
-  move $source, $dest;
+  return [sort {$a->[0] <=> $b->[0]} (@$render_and_files, @scale_and_files) ];
 }
 
 =head2 generate
@@ -327,7 +357,6 @@ sub generate {
   my %p = validate ( @_, {
     scales => { type => ARRAYREF, optional => 1 },
     f_quiet => { type => BOOLEAN, default => 0 },
-    f_skip_render => { type => BOOLEAN, default => 0 },
   } );
 
   # scale settings
@@ -337,34 +366,75 @@ sub generate {
   }
   $self->{scales} = $scales;
 
-  mkpath ( [
-    $self->{base_dir},
-    $self->{rendered_dir},
-    map { $self->{base_dir} . '/scale' . ($_ * 100) } @$scales,
-  ] );
-  if (!$p{f_skip_render})
-  {
-    if ($self->{f_pdf}) {
-      $scale_and_files = $self->pdf_to_png ();
-    }
-    else {
-      $scale_and_files = $self->scale_raster_image ();
-    }
-    @file_names = map { $_->[1] } @$scale_and_files;
-    foreach my $row (@$scale_and_files) {
-      my ($scale, $file_name) = @$row;
-      $self->tile_image ($scale, $file_name);
-    }
-    $self->create_mini_map ($file_names[-1]);
-      # Create a mini map based on the last file. Last is typically largest.
+  mkpath ($self->{rendered_dir}, 1);
+  if ($self->{f_pdf}) {
+    $scale_and_files = $self->pdf_to_png ();
   }
+  else {
+    $scale_and_files = $self->scale_raster_image ();
+  }
+  @file_names = map { $_->[1] } @$scale_and_files;
+  foreach my $row (@$scale_and_files) {
+    my ($scale, $file_name) = @$row;
+    $self->tile_image ($scale, $file_name);
+  }
+  $self->create_mini_map ($file_names[-1]);
+    # Create a mini map based on the last file. Last is typically largest.
 
   $self->generate_html (@file_names);
-  $self->zip_files ();
-  $self->move_generated_files_to_final_directory();
+  $self->zip_files ();    # slow
 
   # return the image directory where generated files are located
   return $self->{base_name};
+}
+
+sub is_up_to_date {
+  # named parameters are only present to make the code clearer to read
+  # when calling this function.
+  my %p = validate (@_, {
+    source => {type => SCALAR},
+    target => {type => SCALAR},
+  });
+
+  # Check modification times
+  # Has target been generated more recently than source
+  return (stat $p{target})[9] > (stat $p{source})[9]
+    if (-e $p{target});
+
+  return 0;
+}
+
+sub get_previous_scale_renders {
+  my ($source, $rendered_dir) = @_;
+  my @render_and_files;
+
+  opendir (my $dir_handle, $rendered_dir) 
+    || croak "Could not open $rendered_dir";
+  @render_and_files
+      = map  { my ($scale) = /scale(\d+)[.]png$/;
+               [ $scale/100 , $_ ] }
+        grep { is_up_to_date (source=> $source, target=> "$rendered_dir/$_") }
+        grep { /scale\d+[.]png$/ }
+        readdir $dir_handle;
+  closedir ($dir_handle);
+  return \@render_and_files;
+}
+
+# Currently not used, but will be
+sub get_scale_render {
+  my ($source, $rendered_dir) = @_;
+
+  opendir (my $dir_handle, $rendered_dir)
+    || croak "Could not open $rendered_dir";
+  my %scale_render
+      = map  { my ($scale) = /scale(\d+)[.]png$/;
+               $scale/100 , $_ }
+        grep { is_up_to_date (source=> $source, target=> "$rendered_dir/$_") }
+        grep { /scale\d+[.]png$/ }
+        readdir $dir_handle;
+  closedir ($dir_handle);
+
+  return \%scale_render;
 }
 
 1;

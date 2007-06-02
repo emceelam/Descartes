@@ -14,7 +14,6 @@ use Storable qw(store retrieve);
 pod2usage (-verbose => 1) if !@ARGV;
 
 my $f_quiet = 0;
-my $f_skip_render = 0;
 my @source_files;
 my @directories;
 my @non_existents;
@@ -23,14 +22,12 @@ my @rendered_files;
 my %gen_parms;
 
 GetOptions (
-  'quiet' => \$f_quiet, 
-  'scale:s' => \&scaling, 
-  'skip_render' => \$f_skip_render,
+  'quiet' => \$f_quiet,
+  'scale:s' => \&scaling,
   '<>' => \&process_graphic_file,
 );
 
 $gen_parms{f_quiet} = $f_quiet if $f_quiet;
-$gen_parms{f_skip_render} = $f_skip_render if $f_skip_render;
 
 SOURCE_FILE:
 foreach my $source_file (@source_files) {
@@ -195,11 +192,6 @@ represented as
 --scale=0.75,1,1.25,1.50
 
 Please, no spaces.
-
-=head2 --skip_render
-
-Skip the image rendering stage. Only do this if you know you have already 
-rendered the images. (Feature is dysfunctional.)
 
 =head2 --help
 

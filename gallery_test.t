@@ -50,8 +50,6 @@ foreach my $graphic_file (@graphic_files)
   ok ( (any { m/^x0y0\./ } @tiles), "x0y0 tile exist" );
 }
 
-ok (-d "$gallery_dir/__processing", 
-  "$gallery_dir/__processing directory exist");
 ok (-f "$gallery_dir/index.html",
   "$gallery_dir/index.html exist");
 ok (-M "$gallery_dir/index.html" < 0,
