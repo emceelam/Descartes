@@ -10,6 +10,10 @@ use Data::Dumper;
 use Cwd qw(cwd);
 use Text::Wrap qw(wrap);
 use Storable qw(store retrieve);
+use XML::Simple qw(XMLin);
+use List::MoreUtils qw(firstval);
+use Carp qw(croak);
+use Math::Round qw(round);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -20,6 +24,7 @@ my @non_existents;
 my @problem_files;
 my @rendered_files;
 my %gen_parms;
+$Data::Dumper::Indent = 1;
 
 GetOptions (
   'quiet' => \$f_quiet,
@@ -80,21 +85,31 @@ sub make_gallery {
     };
     return;
   }
-  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } readdir DIR;
+  my @all_files = readdir DIR;
+  my $hiff_file = firstval { $_ eq 'gallery.hiff' } @all_files;
+  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
   closedir DIR;
 
-  #my @stor;
+  my $hiff;
+  if (-e "$gallery_dir/$hiff_file") {
+    $hiff = XMLin("$gallery_dir/$hiff_file",
+                   KeyAttr => { item => 'dir' },
+                   ForceArray => ['item']);
+  }
+  #print Dumper $hiff;
+
+  my $H_item = $hiff->{menu}{item};
   my @thumbs;
   GRAPHIC_FILE:
   foreach my $graphic_file (@graphic_files) {
     print "Rendering $gallery_dir/$graphic_file\n";
     my $map_maker =
       AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
-    my $image_dir = $map_maker->generate(@gen_parms);
+    my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
     my $generated_dir = "$gallery_dir/$image_dir";
-    #push @stor, { dir => $image_dir };
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
+    my $hi_res_file = get_hi_res_file ("$generated_dir/rendered");
     my $info = image_info ($mini_map_file);
     if (my $error = $info->{error}) {
        push @problem_files, {
@@ -113,8 +128,23 @@ sub make_gallery {
       width => $mini_map_width,
       height => $mini_map_height,
     };
+
+    # hiff augmentation
+    my $item = $H_item->{$image_dir};
+    $item->{thumb} = {
+      src => "$image_dir/rendered/$mini_map_name",
+      width => $mini_map_width,
+      height => $mini_map_height,
+    };
+    $item->{multi_res} = "$image_dir/index.html";
+    my $low_res_name = $map_maker->get_low_res_name();
+    $item->{low_res}{file} = "$image_dir/rendered/$low_res_name";
+    $item->{low_res}{size}
+      = round ((stat "$generated_dir/rendered/$low_res_name")[7] / 1024);
+    $item->{hi_res}{file} = "$image_dir/rendered/$hi_res_file";
+    $item->{hi_res}{size}
+      = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
-  #store \@stor, "$gallery_dir/catalog.dat";
 
   my $tt = Template->new ();
   $tt->process(
@@ -123,6 +153,7 @@ sub make_gallery {
           thumbs => \@thumbs,
           mini_map_max_width => $mini_map_max_width,
           mini_map_max_height => $mini_map_max_height,
+          hiff => $hiff,
         },
         "$gallery_dir/index.html"
   );
@@ -169,6 +200,18 @@ sub process_graphic_file {
   }
 
   push @source_files, $source;
+}
+
+sub get_hi_res_file {
+  my $rendered_dir = shift;
+
+  opendir (my $DIR, $rendered_dir)
+    || croak "Could not open $rendered_dir: $!";
+  my %scaled = map { /scale(\d+)[.][a-z]{3}$/ ? ($1,$_) : () } readdir $DIR;
+  my $max_scale = ( sort {$a<=>$b} keys %scaled )[-1];
+  closedir $DIR;
+
+  return $scaled{$max_scale};
 }
 
 __END__

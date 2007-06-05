@@ -1,3 +1,10 @@
+[%
+  IF hiff;
+    gallery_name = hiff.name;
+  END;
+  USE Dumper;
+  menu = hiff.menu;
+-%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "DTD/xhtml1-transitional.dtd">
 <!-- AUTHOR: Emcee Lam -->
@@ -5,9 +12,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
   xml:lang="en" lang="en">
   <head>
-    <title>
-      Gallery (Beta)
-    </title>
+    <title>[% gallery_name %]</title>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
     <meta http-equiv="Content-Script-Type" content="text/javascript" />
     <style type="text/css">
@@ -63,9 +68,42 @@
     </script>
   </head>
   <body>
-    <h1>Gallery (Beta)</h1>
+    <h1>[% gallery_name %]</h1>
+    <h2>[% menu.name %]</h2>
+    <p>[% menu.desc %]</p>
     <ul id="gallery">
-      [% FOREACH thumb = thumbs %]
+      [%- FOREACH dir IN menu.item.keys %]
+        [%- item = menu.item.$dir %]
+        <li>
+          <div class="thumbnail">
+            <img src="[% item.thumb.src %]"
+                border="0"
+                alt="[% item.name %]" />
+          </div>
+          <ul>
+            <li>[% item.name %]</li>
+            <li>
+              <a href="[% item.multi_res %]">
+                Multi-res</a>
+            </li>
+            <li>
+              <a href="[% item.low_res.file %]">
+                Low-res</a>
+              : [% item.low_res.size %]K
+            </li>
+            </li>
+            <li>
+              <a href="[% item.hi_res.file %]">
+                Hi-res</a>
+              : [% item.hi_res.size %]K
+            </li>
+            <li>[% item.desc %]</li>
+          </ul>
+        </li>
+      [%- END %]
+    </ul>
+    <ul id="gallery">
+      [%- FOREACH thumb = thumbs %]
         <li>
           <div class="thumbnail">
             <img src="[% thumb.src %]"
@@ -83,7 +121,7 @@
             </li>
           </ul>
         </li>
-      [% END %]
+      [%- END %]
     </ul>
     <p style="clear:left">
       This gallery correctly displays under <a href="http://getfirefox.com">

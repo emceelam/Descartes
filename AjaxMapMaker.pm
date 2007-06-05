@@ -3,8 +3,8 @@ package AjaxMapMaker;
 use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK
-  = qw ( $mini_map_max_width $mini_map_max_height $mini_map_name $tile_size);
+@EXPORT_OK = qw ( $mini_map_max_width $mini_map_max_height $mini_map_name
+                  $tile_size);
 
 use strict;
 use Imager;
@@ -28,6 +28,7 @@ Readonly our $tile_size => 256;
 Readonly our $mini_map_max_width  => 200;
 Readonly our $mini_map_max_height => 200;
 Readonly our $mini_map_name => "mini_map.png";
+Readonly our $hi_res_name => "hi_res";
 
 sub new {
   my ($class_name, $source_file, $dest_dir, $catalog_file) = @_;
@@ -66,6 +67,7 @@ sub new {
   );
   $self->{target_file_ext} = $sourceFileExt_to_targetFileExt{ $file_ext };
 
+=begin
   # catalog_file
   $catalog_file ||= "catalog.dat";
   my $catalog;
@@ -86,15 +88,17 @@ sub new {
   }
   $self->{catalog_item} = $catalog_item;
   $self->{catalog} = $catalog;
-
+=cut
   return bless $self, $class_name;
 }
 
+=begin
 sub DESTROY {
   my $self = shift;
   store $self->{catalog}, $self->{catalog_file};
   print "Now Storing catalog\n";
 }
+=cut
 
 # Render the current pdf into multiple scales and
 # return the scales and file names.
@@ -167,7 +171,44 @@ sub create_mini_map {
                      ypixels => $mini_map_max_height,
                      type=>'min');
   $scaled_img->write (file => "$rendered_dir/$mini_map_name")
-    || die "Could not write mini map: " . $img->errstr . "\n"
+    || die "Could not write mini map: " . $img->errstr . "\n";
+}
+
+sub create_hi_res {
+  my ($self, $file_name) = @_;
+  my $rendered_dir = $self->{rendered_dir};
+  link $file_name, "$rendered_dir/hi_res" ||
+    croak "could not link";
+}
+
+# The low_res_name is dependent on the target_file_ext. 
+# Only meaningful after the low_res image is created. 
+sub get_low_res_name {
+  my $self = shift;
+  return $self->{low_res_name};
+}
+
+sub create_low_res {
+  my ($self, $file_name) = @_;
+  my $rendered_dir = $self->{rendered_dir};
+  my $low_res_name = "low_res." . $self->{target_file_ext};
+  $self->{low_res_name} = $low_res_name;
+
+  return if is_up_to_date(
+                  source => "$rendered_dir/$file_name",
+                  target => "$rendered_dir/$low_res_name",
+                );
+
+  print "Rendering $rendered_dir/$low_res_name\n";
+  my $img = Imager->new();
+  $img->read (file => "$rendered_dir/$file_name")
+    || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
+  my $scaled_img = $img->scale (
+                     xpixels => 640,
+                     ypixels => 480,
+                     type=>'min');
+  $scaled_img->write (file => "$rendered_dir/$low_res_name")
+    || die "Could not write low res: " . $img->errstr . "\n";
 }
 
 sub tile_image {
@@ -355,8 +396,9 @@ sub generate {
   my @file_names;
   my $scale_and_files;
   my %p = validate ( @_, {
-    scales => { type => ARRAYREF, optional => 1 },
-    f_quiet => { type => BOOLEAN, default => 0 },
+    scales   => { type => ARRAYREF, optional => 1 },
+    f_quiet  => { type => BOOLEAN,  default  => 0 },
+    f_zip    => { type => BOOLEAN,  default  => 1 },
   } );
 
   # scale settings
@@ -380,9 +422,13 @@ sub generate {
   }
   $self->create_mini_map ($file_names[-1]);
     # Create a mini map based on the last file. Last is typically largest.
+  $self->create_hi_res  ($file_names[-1]);
+  $self->create_low_res ($file_names[-1]);
 
   $self->generate_html (@file_names);
-  $self->zip_files ();    # slow
+  if ($p{f_zip}) {
+    $self->zip_files ();    # slow
+  }
 
   # return the image directory where generated files are located
   return $self->{base_name};
@@ -411,10 +457,10 @@ sub get_previous_scale_renders {
   opendir (my $dir_handle, $rendered_dir) 
     || croak "Could not open $rendered_dir";
   @render_and_files
-      = map  { my ($scale) = /scale(\d+)[.]png$/;
+      = map  { my ($scale) = /scale(\d+)[.][a-z]{3}$/;
                [ $scale/100 , $_ ] }
         grep { is_up_to_date (source=> $source, target=> "$rendered_dir/$_") }
-        grep { /scale\d+[.]png$/ }
+        grep { /scale\d+[.][a-z]{3}$/ }
         readdir $dir_handle;
   closedir ($dir_handle);
   return \@render_and_files;
