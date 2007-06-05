@@ -67,38 +67,8 @@ sub new {
   );
   $self->{target_file_ext} = $sourceFileExt_to_targetFileExt{ $file_ext };
 
-=begin
-  # catalog_file
-  $catalog_file ||= "catalog.dat";
-  my $catalog;
-  if (-e $catalog_file) {
-    $catalog = retrieve($catalog_file) 
-      || croak "can not retrieve $catalog_file";
-  }
-  $self->{catalog_file} = $catalog_file;
-
-  # catalog_item
-  my $catalog_item = firstval {$_->{dir} eq $base_name} @$catalog;
-  if (!$catalog_item) {
-    $catalog_item = {
-      file => "$base_name.$file_ext",
-      dir  => $base_name,
-    };
-    push @$catalog, $catalog_item;   # $catalog autovivifies
-  }
-  $self->{catalog_item} = $catalog_item;
-  $self->{catalog} = $catalog;
-=cut
   return bless $self, $class_name;
 }
-
-=begin
-sub DESTROY {
-  my $self = shift;
-  store $self->{catalog}, $self->{catalog_file};
-  print "Now Storing catalog\n";
-}
-=cut
 
 # Render the current pdf into multiple scales and
 # return the scales and file names.
@@ -181,18 +151,10 @@ sub create_hi_res {
     croak "could not link";
 }
 
-# The low_res_name is dependent on the target_file_ext. 
-# Only meaningful after the low_res image is created. 
-sub get_low_res_name {
-  my $self = shift;
-  return $self->{low_res_name};
-}
-
 sub create_low_res {
   my ($self, $file_name) = @_;
   my $rendered_dir = $self->{rendered_dir};
   my $low_res_name = "low_res." . $self->{target_file_ext};
-  $self->{low_res_name} = $low_res_name;
 
   return if is_up_to_date(
                   source => "$rendered_dir/$file_name",

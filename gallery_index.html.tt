@@ -1,5 +1,5 @@
 [%
-  IF hiff;
+  IF hiff.defined;
     gallery_name = hiff.name;
   END;
   USE Dumper;
@@ -83,8 +83,9 @@
           <ul>
             <li>[% item.name %]</li>
             <li>
-              <a href="[% item.multi_res %]">
+              <a href="[% item.multi_res.file %]">
                 Multi-res</a>
+              : [% item.multi_res.scale_desc %]
             </li>
             <li>
               <a href="[% item.low_res.file %]">

@@ -109,7 +109,9 @@ sub make_gallery {
     my $generated_dir = "$gallery_dir/$image_dir";
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
-    my $hi_res_file = get_hi_res_file ("$generated_dir/rendered");
+    my ($hi_res_file, $low_res_file, $scales)
+        = get_hi_res_file ("$generated_dir/rendered");
+    my $scale_desc = join ', ', map { ($_ * 100) . '%' } @$scales;
     my $info = image_info ($mini_map_file);
     if (my $error = $info->{error}) {
        push @problem_files, {
@@ -136,11 +138,11 @@ sub make_gallery {
       width => $mini_map_width,
       height => $mini_map_height,
     };
-    $item->{multi_res} = "$image_dir/index.html";
-    my $low_res_name = $map_maker->get_low_res_name();
-    $item->{low_res}{file} = "$image_dir/rendered/$low_res_name";
+    $item->{multi_res}{file} = "$image_dir/index.html";
+    $item->{multi_res}{scale_desc} = $scale_desc;
+    $item->{low_res}{file} = "$image_dir/rendered/$low_res_file";
     $item->{low_res}{size}
-      = round ((stat "$generated_dir/rendered/$low_res_name")[7] / 1024);
+      = round ((stat "$generated_dir/rendered/$low_res_file")[7] / 1024);
     $item->{hi_res}{file} = "$image_dir/rendered/$hi_res_file";
     $item->{hi_res}{size}
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
@@ -207,11 +209,16 @@ sub get_hi_res_file {
 
   opendir (my $DIR, $rendered_dir)
     || croak "Could not open $rendered_dir: $!";
-  my %scaled = map { /scale(\d+)[.][a-z]{3}$/ ? ($1,$_) : () } readdir $DIR;
-  my $max_scale = ( sort {$a<=>$b} keys %scaled )[-1];
+  my @dir_files = readdir $DIR;
   closedir $DIR;
 
-  return $scaled{$max_scale};
+  my $low_res_file = firstval { /^low_res[.][a-z]{3}$/ } @dir_files;
+  my %scaled = map { /scale(\d+)[.][a-z]{3}$/ ? ($1,$_) : () } @dir_files;
+  my @sorted_scales =  sort {$a<=>$b} keys %scaled;
+  my $max_scale = $sorted_scales[-1];
+  my $high_res_file = $scaled{$max_scale};
+
+  return ($high_res_file, $low_res_file, [ map { $_ / 100 } @sorted_scales ] );
 }
 
 __END__
