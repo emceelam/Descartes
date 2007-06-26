@@ -71,6 +71,21 @@
     <h1>[% gallery_name %]</h1>
     <h2>[% menu.name %]</h2>
     <p>[% menu.desc %]</p>
+    [%-
+      IF hiff.defined;
+        PROCESS hiff_gallery;
+      ELSE;
+        PROCESS thumb_gallery;
+      END;
+    %]
+    <p style="clear:left">
+      This gallery correctly displays under <a href="http://getfirefox.com">
+      Firefox</a>, but languishes under IE6.
+    </p>
+  </body>
+</html>
+
+[% BLOCK hiff_gallery %]
     <ul id="gallery">
       [%- FOREACH dir IN menu.item.keys %]
         [%- item = menu.item.$dir %]
@@ -103,6 +118,9 @@
         </li>
       [%- END %]
     </ul>
+[% END %]
+
+[% BLOCK thumb_gallery %]
     <ul id="gallery">
       [%- FOREACH thumb = thumbs %]
         <li>
@@ -124,9 +142,4 @@
         </li>
       [%- END %]
     </ul>
-    <p style="clear:left">
-      This gallery correctly displays under <a href="http://getfirefox.com">
-      Firefox</a>, but languishes under IE6.
-    </p>
-  </body>
-</html>
+[% END %]

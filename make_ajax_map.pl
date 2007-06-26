@@ -110,7 +110,7 @@ sub make_gallery {
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
     my ($hi_res_file, $low_res_file, $scales)
-        = get_hi_res_file ("$generated_dir/rendered");
+        = get_all_res ("$generated_dir/rendered");
     my $scale_desc = join ', ', map { ($_ * 100) . '%' } @$scales;
     my $info = image_info ($mini_map_file);
     if (my $error = $info->{error}) {
@@ -204,7 +204,7 @@ sub process_graphic_file {
   push @source_files, $source;
 }
 
-sub get_hi_res_file {
+sub get_all_res {
   my $rendered_dir = shift;
 
   opendir (my $DIR, $rendered_dir)

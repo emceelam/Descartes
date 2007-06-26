@@ -264,7 +264,7 @@ sub zip_files {
   my $cwd = cwd();
 
   print "creating zip archive\n";
-  chdir("$cwd/$dest_dir") || die "zip_files could not chdir\n";
+  chdir($dest_dir) || die "zip_files() could not chdir\n";
   die "At ". cwd(). ", where is directory $base_dir?"
     if !-d $base_dir;
   unlink "$base_dir/$base_name.zip";
@@ -272,7 +272,7 @@ sub zip_files {
   find (
     {
       wanted => sub { $File::Find::dir !~ m/rendered$/ &&
-                        $zip->addFileOrDirectory($_) },
+                        $zip->updateMember($_, $_) },
       no_chdir => 1
     },
     $base_dir
@@ -338,21 +338,6 @@ sub scale_raster_image {
   return [sort {$a->[0] <=> $b->[0]} (@$render_and_files, @scale_and_files) ];
 }
 
-=head2 generate
-
-When called, generate will coordinate the creation of the files neccessary
-to create an AJAX map
-
-=head3 parameters
-
-scales: List ref of scaling factors. 100% scale factor is 1. 50% is 0.5.
-So on and so on
-
-=head3 return
-
-returns the directory where generated files reside
-
-=cut
 sub generate {
   my $self = shift;
   my @file_names;
@@ -451,16 +436,41 @@ __END__
 
 =head1 NAME
 
-AjaxMapMaker
+AjaxMapMaker - Makes AJAX maps
 
 =head1 SYNOPSIS
 
 AjaxMapMaker->new(source_file, dest_dir)->generate();
 
 source_file is a pdf, jpg, png, gif, or tiff.
-dest_dir is optional, defaults to '.'.
+dest_dir is optional, defaults to current directory.
+
+=head1 DESCRIPTION
+
+This class generates an AJAX map if given a pdf, jpg, png, gif or tiff file.
+The files are deposited in a subdirectory whose name is take from the file name sans file extension, e.g. The funkyfile.pdf AJAX map is rendered in 'funkyfile' subdirectory.
+
+=head1 METHODS
+
+=head2 generate
+
+When called, generate will coordinate the creation of the files neccessary
+to create an AJAX map
+
+=head3 parameters
+
+scales: List ref of scaling factors. 100% scale factor is 1. 50% is 0.5.
+So on and so on
+
+f_zip: By default, zip file of generated files is always created.
+
+=head3 return
+
+returns the directory where generated files reside
+
+=cut
 
 =head1 AUTHOR
 
-# Written by Lambert Lum (emceelam@warpmail.net)
+Written by Lambert Lum (emceelam@warpmail.net)
 
