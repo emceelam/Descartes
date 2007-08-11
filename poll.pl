@@ -8,13 +8,25 @@ use Text::CSV;
 use IO::File;
 use DateTime;
 use CGI qw(url);
+use POSIX qw(setsid);
 use Fatal qw(open close seek truncate);
 use AjaxMapMaker;
-use Tools qw(get_now_string send_mail $ajax_map_doc_root);
+use Tools qw(get_now_string send_mail become_daemon $ajax_map_doc_root);
 
-my $queue_data_file = "queue.dat";
+my $queue_data_file = "$ajax_map_doc_root/queue.dat";
 my $log_data_file = "log.dat";
 my $target_dir = "target";
+
+open_pid_file ('/var/tmp/descartes.pid');
+
+while (1) {
+  become_daemon();
+  while (-e $queue_data_file && !-z $queue_data_file) {
+    process_next_job();
+  }
+  print "Waiting for jobs. Sleeping for five seconds.\n";
+  sleep (5);
+}
 
 sub process_next_job {
   my $F;
@@ -66,10 +78,3 @@ sub process_next_job {
     "Your AJAX map is available at $url_base/$target_dir");
 }
 
-while (1) {
-  while (!-z $queue_data_file) {
-    process_next_job();
-  }
-  print "Waiting for jobs. Sleeping for five seconds.\n";
-  sleep (5);
-}

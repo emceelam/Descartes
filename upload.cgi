@@ -13,8 +13,6 @@ use DateTime;
 use Tools qw(get_now_string $ajax_map_doc_root);
 use Fatal qw(open close);
 
-
-
 print header();
 print start_html("File Uploading");
 print h1 "File Uploads";
@@ -62,11 +60,13 @@ if (param ('submit')) {
   my $upload_path;
   if (!$dfv_error) {
     my $filename = param('upload');
-    $fh = upload ('upload')
-      || die ("Could not Upload File: " . cgi_error . "\n");
+    $fh = upload ('upload');
+    die ("Could not Upload File: " . cgi_error() . "\n")
+      if !$fh && cgi_error();
     my $upload_filename = (split m{/},$filename)[-1];
     my $email = param('email1');
-    my $user_directory = get_user_directory ($email);
+    #my $user_directory = get_user_directory ($email);
+    my $user_directory = "u/$email";
     my $ajax_map_dir = "$ajax_map_doc_root/$user_directory";
     $upload_path = "$ajax_map_dir/$upload_filename";
     mkpath ("$ajax_map_dir");
@@ -81,7 +81,7 @@ if (param ('submit')) {
     my $csv = Text::CSV->new();
     $csv->combine(get_now_string(), $email, "$user_directory/$upload_filename");
     my $line = $csv->string();
-    open my $F, '>>', 'queue.dat';
+    open my $F, '>>', "$ajax_map_doc_root/queue.dat";
     flock $F, LOCK_EX;
     print $F "$line\n";
     close $F;
@@ -97,7 +97,7 @@ if (param ('submit')) {
 print p q{Upload your image file (pdf, jpg, png, gif) and system will
           create an AJAX map for you.
         };
-print start_multipart_form();
+print start_form();
 print '<table border="0", cellpadding="0" cellspacing="3">';
 print Tr td("e-mail address",
             $dfv_error->{email1}),

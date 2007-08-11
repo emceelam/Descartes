@@ -3,7 +3,8 @@ package Tools;
 use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw ( get_now_string send_mail $ajax_map_doc_root);
+@EXPORT_OK = qw ( get_now_string send_mail become_daemon open_pid_file
+  $ajax_map_doc_root);
 
 use DateTime;
 use DateTime::Format::MySQL;
@@ -32,6 +33,41 @@ MESSAGE
 close(MAIL);
 }
 
+sub become_daemon {
+  my $child = fork();
+
+  die "Can't fork" unless defined $child;
+  exit 0 if $child;  # parent dies
+  setsid ();    # become session leader
+  open (STDIN, '<', '/dev/null');
+  open (STDOUT, '>', '/dev/null');
+  open (STDERR, ">&STDOUT");
+  chdir '/';   # change working directory
+  umask (0);   # forget file mode creation mask
+  $ENV{PATH} = '/bin:/sbin:/usr/bin:/usr/sbin';
+  return $$;
+}
+
+
+sub open_pid_file {
+  my $file = shift;
+  if (-e $file) {
+    my $fh = IO::File->new($file);
+    return undef if !$fh;
+
+    my $pid = <$fh>;
+    die "Server already running with PID $pid" if kill 0, $pid;
+    warn "Removing PID file for defunct server process $pid.\n";
+    die  "Can't unlink PID file $file" unless -w $file && unlink $file;
+  }
+  return IO::File->new ($file, O_WRONLY|O_CREAT|O_EXCL, 0644)
+    or die "Can't create $file: $!\n";
+}
+
+
+sub tell_admin {
+  
+}
 
 
 1;
