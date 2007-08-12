@@ -1,4 +1,4 @@
-package Tools;
+package Descartes::Tools;
 
 use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;

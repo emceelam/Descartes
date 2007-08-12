@@ -1,7 +1,8 @@
 #!/usr/bin/perl -w
 
 use strict;
-use AjaxMapMaker qw($mini_map_max_width $mini_map_max_height $mini_map_name);
+use Descartes::AjaxMapMaker qw($mini_map_max_width $mini_map_max_height
+      $mini_map_name);
 use Getopt::Long qw(:config gnu_getopt auto_help);
 use Pod::Usage;
 use Image::Info qw(image_type image_info dim);

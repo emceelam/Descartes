@@ -10,8 +10,9 @@ use DateTime;
 use CGI qw(url);
 use POSIX qw(setsid);
 use Fatal qw(open close seek truncate);
-use AjaxMapMaker;
-use Tools qw(get_now_string send_mail become_daemon $ajax_map_doc_root);
+use Descartes::AjaxMapMaker;
+use Descartes::Tools qw(get_now_string send_mail become_daemon 
+      $ajax_map_doc_root);
 
 my $queue_data_file = "$ajax_map_doc_root/queue.dat";
 my $log_data_file = "log.dat";
