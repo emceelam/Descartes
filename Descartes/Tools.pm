@@ -9,6 +9,8 @@ require Exporter;
 use DateTime;
 use DateTime::Format::MySQL;
 use Readonly;
+use IO::File;
+use POSIX qw(setsid);
 
 Readonly our $ajax_map_doc_root => '/home/www/ajax_map';
 Readonly our $home_time_zone => 'America/Los_Angeles';
@@ -56,7 +58,7 @@ sub open_pid_file {
     return undef if !$fh;
 
     my $pid = <$fh>;
-    die "Server already running with PID $pid" if kill 0, $pid;
+    die "Server already running with PID $pid\n" if kill 0, $pid;
     warn "Removing PID file for defunct server process $pid.\n";
     die  "Can't unlink PID file $file" unless -w $file && unlink $file;
   }

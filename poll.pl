@@ -11,17 +11,19 @@ use CGI qw(url);
 use POSIX qw(setsid);
 use Fatal qw(open close seek truncate);
 use Descartes::AjaxMapMaker;
-use Descartes::Tools qw(get_now_string send_mail become_daemon 
+use Descartes::Tools qw(get_now_string send_mail become_daemon open_pid_file
       $ajax_map_doc_root);
 
 my $queue_data_file = "$ajax_map_doc_root/queue.dat";
-my $log_data_file = "log.dat";
+my $log_data_file = "logs/log.dat";
 my $target_dir = "target";
 
-open_pid_file ('/var/tmp/descartes.pid');
+my $fh = open_pid_file ('/var/tmp/descartes.pid');
+my $pid = become_daemon();
+print $fh $pid;
+close $fh;
 
 while (1) {
-  become_daemon();
   while (-e $queue_data_file && !-z $queue_data_file) {
     process_next_job();
   }
