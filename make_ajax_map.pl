@@ -39,7 +39,7 @@ SOURCE_FILE:
 foreach my $source_file (@source_files) {
   print "Rendering $source_file\n";
   eval {
-    AjaxMapMaker->new($source_file)->generate(%gen_parms);
+    Descartes::AjaxMapMaker->new($source_file)->generate(%gen_parms);
   };
   if ($@) {
     push @problem_files, {file => $source_file, error => $@};

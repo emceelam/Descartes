@@ -11,6 +11,7 @@ use DateTime::Format::MySQL;
 use Readonly;
 use IO::File;
 use POSIX qw(setsid);
+use Params::Validate qw(validate SCALAR);
 
 Readonly our $ajax_map_doc_root => '/home/www/ajax_map';
 Readonly our $home_time_zone => 'America/Los_Angeles';
@@ -36,6 +37,11 @@ close(MAIL);
 }
 
 sub become_daemon {
+  my %p = validate (@_, {
+    working_dir => {
+      type => SCALAR,
+    },
+  });
   my $child = fork();
 
   die "Can't fork" unless defined $child;
@@ -43,8 +49,8 @@ sub become_daemon {
   setsid ();    # become session leader
   open (STDIN, '<', '/dev/null');
   open (STDOUT, '>', '/dev/null');
-  open (STDERR, ">&STDOUT");
-  chdir '/';   # change working directory
+  #open (STDERR, ">&STDOUT");
+  chdir $p{working_dir};   # change working directory
   umask (0);   # forget file mode creation mask
   $ENV{PATH} = '/bin:/sbin:/usr/bin:/usr/sbin';
   return $$;

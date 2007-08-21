@@ -31,7 +31,7 @@ Readonly our $mini_map_name => "mini_map.png";
 Readonly our $hi_res_name => "hi_res";
 
 sub new {
-  my ($class_name, $source_file, $dest_dir, $catalog_file) = @_;
+  my ($class_name, $source_file, $dest_dir, $html_template) = @_;
 
   my ($base_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
   $base_name =~ s/[^a-zA-Z0-9.\-]/_/g;
@@ -49,6 +49,7 @@ sub new {
     dest_base => $dest_base,
     base_dir => $base_dir,
     base_name => $base_name,
+    html_template => ($html_template || 'index.html.tt'),
     rendered_dir => "$base_dir/rendered",
     tiles_dir => "$base_dir/$tiles_subdir",
     tiles_subdir => $tiles_subdir,
@@ -239,7 +240,7 @@ sub generate_html {
 
   my $tt = Template->new ();
   $tt->process(
-        'index.html.tt',
+        $self->{html_template},
         {
           file_base => $self->{base_name},
           tiles_subdir => $self->{tiles_subdir},
@@ -313,7 +314,8 @@ sub scale_raster_image {
   if (@unrendered_scales) {
     $img = Imager->new;
     $img->read (file => $source_file)
-      || croak "scale_raster_image:" . $img->errstr() . "\n";
+      || croak "scale_raster_image: source_file => $source_file, " .
+           $img->errstr() . "\n";
   }
 
   foreach $scale (@unrendered_scales) {
@@ -411,6 +413,11 @@ sub get_previous_scale_renders {
         readdir $dir_handle;
   closedir ($dir_handle);
   return \@render_and_files;
+}
+
+sub get_base_name {
+  my $self = shift;
+  return $self->{base_name};
 }
 
 # Currently not used, but will be

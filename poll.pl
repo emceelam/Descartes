@@ -14,12 +14,15 @@ use Descartes::AjaxMapMaker;
 use Descartes::Tools qw(get_now_string send_mail become_daemon open_pid_file
       $ajax_map_doc_root);
 
+# These should be placed in a configuration file
+my $descartes_dir = "/home/emcee/descartes2";
 my $queue_data_file = "$ajax_map_doc_root/queue.dat";
-my $log_data_file = "logs/log.dat";
+my $log_data_file = "$descartes_dir/logs/log.dat";
 my $target_dir = "target";
 
+
 my $fh = open_pid_file ('/var/tmp/descartes.pid');
-my $pid = become_daemon();
+my $pid = become_daemon(working_dir => $descartes_dir);
 print $fh $pid;
 close $fh;
 
@@ -48,15 +51,19 @@ sub process_next_job {
   ($target_dir) = (-d $source_file)
                     ? ($source_file) :
                       $source_file =~ m{(.*)/[^/]+\z}xms;
-  my $ajax_target_dir = "$ajax_map_doc_root/$target_dir";
+  my $base_name;
 
   eval {
-    my $map_maker =
-      AjaxMapMaker->new("$ajax_map_doc_root/$source_file", $ajax_target_dir);
+    my $map_maker
+      = Descartes::AjaxMapMaker->new(
+          "$ajax_map_doc_root/$source_file",
+          "$ajax_map_doc_root/$target_dir",
+          "index.html.tt");
     $map_maker->generate();
+    $base_name = $map_maker->get_base_name();
   };
   if ($@) {
-    print "$@\n";
+    print STDERR "$@\n";
   }
 
   # Done rendering the first job. Now remove the first job from the queue.
@@ -78,6 +85,6 @@ sub process_next_job {
 
   my $url_base = url (-base => 1);
   send_mail ($email, "Processing of $source_file is now done. " .
-    "Your AJAX map is available at $url_base/$target_dir");
+    "Your AJAX map is available at $url_base/$target_dir/$base_name");
 }
 
