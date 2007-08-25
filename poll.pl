@@ -6,7 +6,6 @@ use strict;
 use Fcntl qw(:seek :flock);
 use Text::CSV;
 use IO::File;
-use DateTime;
 use CGI qw(url);
 use POSIX qw(setsid);
 use Fatal qw(open close seek truncate);

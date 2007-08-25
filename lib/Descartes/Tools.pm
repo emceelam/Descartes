@@ -52,7 +52,7 @@ sub become_daemon {
   #open (STDERR, ">&STDOUT");
   chdir $p{working_dir};   # change working directory
   umask (0);   # forget file mode creation mask
-  $ENV{PATH} = '/bin:/sbin:/usr/bin:/usr/sbin';
+  $ENV{PATH} = '/usr/local/bin:/bin:/sbin:/usr/bin:/usr/sbin';
   return $$;
 }
 

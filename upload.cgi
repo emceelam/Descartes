@@ -11,13 +11,14 @@ use Data::FormValidator::Constraints qw(email);
 use Data::FormValidator::Constraints::Upload qw(file_format);
 use Text::CSV qw();
 use File::Path qw(mkpath);
-use File::Copy qw(copy);
+use File::Copy qw(copy move);
 use Math::Round qw(nearest);
 use Image::Info qw(image_info dim);
-use Image::Size qw(imgsize);
+use File::Temp qw(tempfile);
+use File::Basename qw(basename);
 use Readonly;
 use Descartes::Tools qw(get_now_string $ajax_map_doc_root);
-use Fatal qw(open close);
+use Fatal qw(open close unlink);
 
 print header();
 print start_html("File Uploading");
@@ -43,24 +44,20 @@ sub email_match {
 
 # Used exclusively by Data::FormValidator
 sub image_max_megapixels {
-  my $max_megapixels = shift;
+  my ($max_megapixels, $filename) = @_;
 
   return sub {
     my $dfv = shift;
 
     $dfv->set_current_constraint_name('megapixels');
-    my $q = $dfv->get_input_data;
-    my $field = $dfv->get_current_constraint_field;
-    my $upload_name = $q->param($field);
-    my $fh = $q->upload($upload_name);
-    my ($width, $height) = imgsize($fh);
 
-    # Give a pass if this file has no width or height
-    # which is the case for pdf files.
-    return 1 if !defined $width || !defined $height;
+    my $info = image_info($filename);
+    if (my $error = $info->{error}) {
+      return 1;  # Normal scenario if the file is pdf.
+    }
 
-    my $megapixels = $width * $height / 1e6;
-    return $max_megapixels > $megapixels;
+    my ($width, $height) = dim($info);
+    return $max_megapixels * 1000 * 1000 > $width * $height;
   }
 }
 
@@ -71,18 +68,22 @@ my %profile = (
   constraint_methods => {
     email1 => [ email(), \&email_match ],
     email2 => [ email(), \&email_match ],
-    upload => [ file_format(mime_types =>
-                             [ qw(image/jpeg image/gif image/png),
-                               qw(image/tiff application/pdf) ] ),
-                image_max_megapixels($max_megapixels) ],
+    upload => [
+      file_format (
+        mime_types => [
+          qw(image/jpeg image/gif image/png image/tiff application/pdf)
+        ]
+      )
+    ],
   },
   msgs => {
     constraints => {
       email => 'mismatched e-mail address',
       file_format => 'unsupported file format',
-      megapixels => "Image too large, too many pixels in image",
     }
   },
+);
+my %upload_profile = (
 );
 my $dfv_results;
 my $dfv_error;
@@ -94,23 +95,46 @@ if (param ('submit')) {
   if ($dfv_results->has_invalid() or $dfv_results->has_missing()) {
     $dfv_error = $dfv_results->msgs();
   }
+  my $filename = param('upload');
+  $fh = upload ('upload');
+  binmode $fh;
+  die ("Could not Upload File: " . cgi_error() . "\n")
+    if !$fh && cgi_error();
+  my ($temp_fh, $temp_filename) = tempfile();
+  copy $fh, $temp_fh;
+  close $fh;
+  close $temp_fh;
+
+  # Do form validation again, but this time with the uploaded file
+  if (!$dfv_error) {
+    $dfv_results = Data::FormValidator->check($q, {
+      required => [ qw/upload/ ],
+      filters => ['trim'],
+      constraint_methods => {
+        upload => [ image_max_megapixels($max_megapixels, $temp_filename) ],
+      },
+      msgs => {
+        constraints => {
+          megapixels => "Image too large, too many pixels in image",
+        }
+      },
+    });
+    if ($dfv_results->has_invalid() or $dfv_results->has_missing()) {
+      $dfv_error = $dfv_results->msgs();
+      unlink $temp_filename;
+    }
+  }
 
   if (!$dfv_error) {
     eval {
-  
-      my $filename = param('upload');
-      $fh = upload ('upload');
-      binmode $fh;
-      die ("Could not Upload File: " . cgi_error() . "\n")
-        if !$fh && cgi_error();
-      my $upload_filename = (split m{/},$filename)[-1];
       my $email = param('email1');
       my ($login, $email_domain_name) = split /@/, $email;
       my $user_directory = "u/$email_domain_name/$login";
       my $user_path = "$ajax_map_doc_root/$user_directory";
+      my $upload_filename = basename($filename);
       my $upload_path = "$user_path/$upload_filename";
       mkpath ("$user_path");
-      if (! copy ($fh, $upload_path)) {
+      if (! move ($temp_filename, $upload_path)) {
         print STDERR "Could not write uploaded file to $upload_path\n";
         die "Could not upload file\n";
       }
