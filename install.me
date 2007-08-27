@@ -19,7 +19,8 @@ $tt->process (
       'descartesctl')
   || die $tt->error(), "\n";
 
-die "Can not write to /etc/init.d. Please login as root.\n" if !-w '/etc/init.d';
+die "Can not write to /etc/init.d. Please login as root.\n" 
+  if !-w '/etc/init.d';
 chmod 0755, 'descartesctl';
 my $user = 'root';
 my ($login,$pass,$uid,$gid) = getpwnam($user)
