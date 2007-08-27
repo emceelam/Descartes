@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Description: Descartes map maker polling server
+
+case "$1" in
+  'start')
+    if [ -x [% descartes_dir %]/poll.pl ]; then
+      echo "Starting descartes polling: "
+      PERL5LIB=[% descartes_dir %]/lib \
+        [% descartes_dir %]/poll.pl
+    fi
+    ;;
+  'stop')
+    pid_file='/var/tmp/descartes.pid'
+    if [ -e $pid_file ]; then
+      echo "Shutting down descartes polling"
+      kill -TERM `cat $pid_file`
+      /bin/rm $pid_file
+    fi
+    ;;
+  *)
+    echo "Usage: $0 {start|stop}"
+    ;;
+esac

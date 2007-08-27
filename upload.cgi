@@ -15,10 +15,16 @@ use File::Copy qw(copy move);
 use Math::Round qw(nearest);
 use Image::Info qw(image_info dim);
 use File::Temp qw(tempfile);
-use File::Basename qw(basename);
+use File::Basename qw(basename dirname);
+use Cwd qw(abs_path);
 use Readonly;
-use Descartes::Tools qw(get_now_string $ajax_map_doc_root);
+use Config::Std;
+use Descartes::Tools qw(get_now_string);
 use Fatal qw(open close unlink);
+
+my $descartes_dir = dirname(abs_path($0));
+read_config "$descartes_dir/descartes.cfg" => my %config;
+my $ajax_map_doc_root = $config{dir}{ajax_map_doc_root};
 
 print header();
 print start_html("File Uploading");

@@ -3,8 +3,7 @@ package Descartes::Tools;
 use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw ( get_now_string send_mail become_daemon open_pid_file
-  $ajax_map_doc_root);
+@EXPORT_OK = qw ( get_now_string send_mail become_daemon open_pid_file);
 
 use DateTime;
 use DateTime::Format::MySQL;
@@ -13,9 +12,7 @@ use IO::File;
 use POSIX qw(setsid);
 use Params::Validate qw(validate SCALAR);
 
-Readonly our $ajax_map_doc_root => '/home/www/ajax_map';
 Readonly our $home_time_zone => 'America/Los_Angeles';
-use constant HOME_TIME_ZONE => 'America/Los_Angeles';
 
 sub get_now_string {
   my $dt_now = DateTime->now(time_zone => $home_time_zone);

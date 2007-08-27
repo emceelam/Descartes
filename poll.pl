@@ -9,16 +9,17 @@ use IO::File;
 use CGI qw(url);
 use POSIX qw(setsid);
 use Fatal qw(open close seek truncate);
+use Cwd qw(abs_path);
+use File::Basename qw(dirname);
+use Config::Std qw(read_config);
 use Descartes::AjaxMapMaker;
-use Descartes::Tools qw(get_now_string send_mail become_daemon open_pid_file
-      $ajax_map_doc_root);
+use Descartes::Tools qw(get_now_string send_mail become_daemon open_pid_file);
 
-# These should be placed in a configuration file
-my $descartes_dir = "/home/emcee/descartes2";
+my $descartes_dir = dirname(abs_path($0));
+read_config "$descartes_dir/descartes.cfg" => my %config;
+my $ajax_map_doc_root = $config{dir}{ajax_map_doc_root};
 my $queue_data_file = "$ajax_map_doc_root/queue.dat";
 my $log_data_file = "$descartes_dir/logs/log.dat";
-my $target_dir = "target";
-
 
 my $fh = open_pid_file ('/var/tmp/descartes.pid');
 my $pid = become_daemon(working_dir => $descartes_dir);
@@ -47,7 +48,7 @@ sub process_next_job {
   my $csv = Text::CSV->new();
   $csv->parse($job);
   my ($date, $email, $source_file) = $csv->fields();
-  ($target_dir) = (-d $source_file)
+  my ($target_dir) = (-d $source_file)
                     ? ($source_file) :
                       $source_file =~ m{(.*)/[^/]+\z}xms;
   my $base_name;
