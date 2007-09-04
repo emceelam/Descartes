@@ -17,18 +17,23 @@ use File::Copy qw(move copy);
 use File::Path qw(mkpath rmtree);
 use Params::Validate qw(validate ARRAYREF BOOLEAN SCALAR);
 use Math::Round qw(round);
-use Cwd;
+use Cwd qw(cwd abs_path);
 use List::MoreUtils qw(firstval);
 use Carp qw(croak);
 use Storable qw(store retrieve);
 use File::Touch qw(touch);
+use File::Basename qw(dirname);
 use Data::Dumper;
 
 Readonly our $tile_size => 256;
 Readonly our $mini_map_max_width  => 200;
 Readonly our $mini_map_max_height => 200;
 Readonly our $mini_map_name => "mini_map.png";
-Readonly our $hi_res_name => "hi_res";
+Readonly our $thumbnail_max_width  => 100;
+Readonly our $thumbnail_max_height => 100;
+Readonly our $thumbnail_name       => "thumbnail.png";
+Readonly our $low_res_max_width    => 640;
+Readonly our $low_res_max_height   => 480;
 
 sub new {
   my ($class_name, $source_file, $dest_dir, $html_template) = @_;
@@ -43,6 +48,7 @@ sub new {
   my $base_dir = "$dest_dir/$base_name";
   my $f_pdf = $file_ext eq 'pdf';
   my $self = {
+    descartes_dir => dirname (abs_path ($0)),
     source_file_name => $source_file,
     source_file_ext  => $file_ext,
     dest_dir => $dest_dir,
@@ -124,25 +130,37 @@ sub pdf_to_png {
   return [sort { $a->[0] <=> $b->[0] } (@$render_and_files, @scale_and_files)];
 }
 
-sub create_mini_map {
-  my ($self, $file_name) = @_;
+# You should consolidate this function and create_low_res() into an object
+# so that you don't have to re-load the source image each time. Way too
+# time consuming.
+sub create_scaled_down_image {
+  my $self = shift;
+  my %p = validate ( @_, {
+    source     => { type => SCALAR },
+    target     => { type => SCALAR },
+    max_width  => { type => SCALAR },
+    max_height => { type => SCALAR },
+  } );
+
+  my $file_name = $p{source};
+  my $target = $p{target};
   my $rendered_dir = $self->{rendered_dir};
 
   return if is_up_to_date(
                   source => "$rendered_dir/$file_name",
-                  target => "$rendered_dir/$mini_map_name",
+                  target => "$rendered_dir/$target",
                 );
 
-  print "Create $mini_map_name based on $file_name\n";
+  print "Create $target based on $file_name\n";
   my $img = Imager->new();
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
   my $scaled_img = $img->scale (
-                     xpixels => $mini_map_max_width, 
-                     ypixels => $mini_map_max_height,
+                     xpixels => $p{max_width}, 
+                     ypixels => $p{max_height},
                      type=>'min');
-  $scaled_img->write (file => "$rendered_dir/$mini_map_name")
-    || die "Could not write mini map: " . $img->errstr . "\n";
+  $scaled_img->write (file => "$rendered_dir/$target")
+    || die "Could not write $rendered_dir/$target: " . $img->errstr . "\n";
 }
 
 sub create_hi_res {
@@ -238,7 +256,7 @@ sub generate_html {
     if $info->{error};
   my ($mini_map_width, $mini_map_height) = dim($info);
 
-  my $tt = Template->new ();
+  my $tt = Template->new (INCLUDE_PATH => $self->{descartes_dir});
   $tt->process(
         $self->{html_template},
         {
@@ -369,8 +387,15 @@ sub generate {
     my ($scale, $file_name) = @$row;
     $self->tile_image ($scale, $file_name);
   }
-  $self->create_mini_map ($file_names[-1]);
-    # Create a mini map based on the last file. Last is typically largest.
+  my $source = $file_names[-1];
+  # Create scaled down images based on the last file. Last is typically largest.
+  $self->create_scaled_down_image (
+    target => $mini_map_name, source => $source,
+    max_width => $mini_map_max_width, max_height => $mini_map_max_height);
+  $self->create_scaled_down_image (
+    target => $thumbnail_name, source => $source,
+    max_width => $thumbnail_max_width, max_height => $thumbnail_max_height);
+  #$self->create_mini_map ($file_names[-1]);
   $self->create_hi_res  ($file_names[-1]);
   $self->create_low_res ($file_names[-1]);
 

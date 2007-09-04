@@ -97,6 +97,9 @@ sub make_gallery {
                    KeyAttr => { item => 'dir' },
                    ForceArray => ['item']);
   }
+  else {
+    die "Could not find $gallery_dir/$hiff_file\n";
+  }
   #print Dumper $hiff;
 
   my $H_item = $hiff->{menu}{item};
@@ -105,7 +108,7 @@ sub make_gallery {
   foreach my $graphic_file (@graphic_files) {
     print "Rendering $gallery_dir/$graphic_file\n";
     my $map_maker =
-      AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
+      Descartes::AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
     my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
     my $generated_dir = "$gallery_dir/$image_dir";
 
