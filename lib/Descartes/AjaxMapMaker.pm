@@ -395,7 +395,9 @@ sub generate {
   $self->create_scaled_down_image (
     target => $thumbnail_name, source => $source,
     max_width => $thumbnail_max_width, max_height => $thumbnail_max_height);
-  #$self->create_mini_map ($file_names[-1]);
+  $self->create_scaled_down_image (
+    target => "300x300.png", source => $source,
+    max_width => 300, max_height => 300);
   $self->create_hi_res  ($file_names[-1]);
   $self->create_low_res ($file_names[-1]);
 

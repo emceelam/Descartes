@@ -87,19 +87,15 @@ sub make_gallery {
     return;
   }
   my @all_files = readdir DIR;
-  my $hiff_file = firstval { $_ eq 'gallery.hiff' } @all_files;
-  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
   closedir DIR;
+  my $hiff_file = firstval { $_ eq 'gallery.hiff' } @all_files;
+  die "Missing gallery.hiff\n" unless $hiff_file;
+  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
 
   my $hiff;
-  if (-e "$gallery_dir/$hiff_file") {
-    $hiff = XMLin("$gallery_dir/$hiff_file",
-                   KeyAttr => { item => 'dir' },
-                   ForceArray => ['item']);
-  }
-  else {
-    die "Could not find $gallery_dir/$hiff_file\n";
-  }
+  $hiff = XMLin("$gallery_dir/$hiff_file",
+                  KeyAttr => { item => 'dir' },
+                  ForceArray => ['item']);
   #print Dumper $hiff;
 
   my $H_item = $hiff->{menu}{item};
