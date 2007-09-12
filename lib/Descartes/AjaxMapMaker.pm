@@ -398,6 +398,9 @@ sub generate {
   $self->create_scaled_down_image (
     target => "300x300.png", source => $source,
     max_width => 300, max_height => 300);
+  $self->create_scaled_down_image (
+    target => "285x285.png", source => $source,
+    max_width => 285, max_height => 285);
   $self->create_hi_res  ($file_names[-1]);
   $self->create_low_res ($file_names[-1]);
 
