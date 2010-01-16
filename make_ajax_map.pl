@@ -30,7 +30,12 @@ $Data::Dumper::Indent = 1;
 GetOptions (
   'quiet' => \$f_quiet,
   'scale:s' => \&scaling,
-  '<>' => \&process_graphic_file,
+  '<>' =>
+    sub {
+      process_graphic_file (shift, \@source_files,
+                           \@directories, \@non_existents,
+                           \@problem_files, \@rendered_files);
+    },
 );
 
 $gen_parms{f_quiet} = $f_quiet if $f_quiet;
@@ -72,7 +77,7 @@ if (@problem_files) {
 }
 
 =head1 make_gallery
-Take one directory full of graphic files. Call generate on each graphic file. 
+Take one directory full of graphic files. Call generate on each graphic file.
 Voila a gallery of google style maps.
 =cut
 sub make_gallery {
@@ -89,15 +94,18 @@ sub make_gallery {
   my @all_files = readdir DIR;
   closedir DIR;
   my $hiff_file = firstval { $_ eq 'gallery.hiff' } @all_files;
-  die "Missing gallery.hiff\n" unless $hiff_file;
-  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
-
   my $hiff;
-  $hiff = XMLin("$gallery_dir/$hiff_file",
-                  KeyAttr => { item => 'dir' },
-                  ForceArray => ['item']);
-  #print Dumper $hiff;
+  if (!$hiff_file) {
+    $hiff = create_default_hiff ($gallery_dir, \@all_files);
+  }
+  else {
+    warn "Missing gallery.hiff\n" unless $hiff_file;
+    $hiff = XMLin("$gallery_dir/$hiff_file",
+                    KeyAttr => { item => 'dir' },
+                    ForceArray => ['item']);
+  }
 
+  my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
   my $H_item = $hiff->{menu}{item};
   my @thumbs;
   GRAPHIC_FILE:
@@ -170,21 +178,22 @@ sub scaling {
 }
 
 sub process_graphic_file {
-  my $source = shift;
+  my ($source, $source_files, $directories, $non_existents, $problem_files)
+    = @_;
 
   if (!-e $source) {
-    push @non_existents, $source;
+    push @$non_existents, $source;
     return;
   }
   if (-d $source) {
-    push @directories, $source;
+    push @$directories, $source;
     return;
   }
 
   if ($source !~ /\.pdf$/i) {
     my $type = image_type($source);
     if (my $error = $type->{error}) {
-      push @problem_files, {
+      push @$problem_files, {
         file => $source,
         error => "Can not determine file type: $error" 
       };
@@ -193,7 +202,7 @@ sub process_graphic_file {
 
     my $file_type = $type->{file_type};
     if ($file_type !~ m/GIF|PNG|JPEG|TIFF/) {
-      push @problem_files, {
+      push @$problem_files, {
         file => $source,
         error => "file type '$file_type': Not pdf, png, gif, tiff or jpg",
       };
@@ -201,7 +210,37 @@ sub process_graphic_file {
     }
   }
 
-  push @source_files, $source;
+  push @$source_files, $source;
+}
+
+sub create_default_hiff {
+  my ($gallery_dir, $all_files) = @_;
+
+  my $hiff = {
+    name => "Gallery",
+    desc => "Gallery description goes here",
+    menu => {},
+  };
+
+  my %item;
+  GALLERY_ITEM:
+  for my $file_name (@$all_files) {
+    my ($base_name, $file_ext);
+    if (-d "$gallery_dir/$file_name") {
+      next GALLERY_ITEM;
+    }
+    ($base_name, $file_ext)
+      = Descartes::AjaxMapMaker::refine_file_name ($file_name);
+    if (Descartes::AjaxMapMaker::is_image_file_ext($file_ext)) {
+      $item{$base_name} = {
+        name => $file_name,
+        desc => "Description goes here",
+      };
+    }
+  }
+  $hiff->{menu}{item} = \%item;
+
+  return $hiff;
 }
 
 sub get_all_res {

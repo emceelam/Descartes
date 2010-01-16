@@ -4,7 +4,7 @@ use version; our $VERSION = qv('0.1');  # Must all be on same line
 require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw ( $mini_map_max_width $mini_map_max_height $mini_map_name
-                  $tile_size);
+                  $tile_size refine_file_name is_image_file_ext);
 
 use strict;
 use Imager;
@@ -38,9 +38,7 @@ Readonly our $low_res_max_height   => 480;
 sub new {
   my ($class_name, $source_file, $dest_dir, $html_template) = @_;
 
-  my ($base_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
-  $base_name =~ s/[^a-zA-Z0-9.\-]/_/g;
-  $file_ext = lc $file_ext;
+  my ($base_name, $file_ext) = refine_file_name ($source_file);
   $dest_dir ||= '.';
   $dest_dir =~ s|/$||;
   my $dest_base = "$dest_dir/$base_name";
@@ -62,7 +60,15 @@ sub new {
     f_pdf => $f_pdf,
   };
 
-  # target_file_ext
+  $self->{target_file_ext} = get_target_file_ext ($file_ext);
+
+  return bless $self, $class_name;
+}
+
+sub get_target_file_ext {
+  my $source_file_ext = shift;
+
+# target_file_ext
   my %sourceFileExt_to_targetFileExt = (
     pdf  => 'png',
     tif  => 'png',
@@ -72,9 +78,28 @@ sub new {
     jpeg => 'jpg',
     png  => 'png',
   );
-  $self->{target_file_ext} = $sourceFileExt_to_targetFileExt{ $file_ext };
 
-  return bless $self, $class_name;
+  return $sourceFileExt_to_targetFileExt{ $source_file_ext };
+}
+
+sub is_image_file_ext {
+  return defined(get_target_file_ext (shift));
+}
+
+# break an image file name into parts and refine the parts
+# the parts are used to create file names for generated ajax map data
+sub refine_file_name {
+  my $source_file = shift;
+
+  my ($base_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
+  if (!$base_name || !$file_ext) {
+    return;
+  }
+
+  $base_name =~ s/[^a-zA-Z0-9.\-]/_/g;
+  $file_ext = lc $file_ext;
+
+  return $base_name, $file_ext;
 }
 
 # Render the current pdf into multiple scales and
