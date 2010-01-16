@@ -106,7 +106,7 @@ sub make_gallery {
   }
 
   my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
-  my $H_item = $hiff->{menu}{item};
+  my $H_item = $hiff->{album}{item};
   my @thumbs;
   GRAPHIC_FILE:
   foreach my $graphic_file (@graphic_files) {
@@ -219,7 +219,7 @@ sub create_default_hiff {
   my $hiff = {
     name => "Gallery",
     desc => "Gallery description goes here",
-    menu => {},
+    album => {},
   };
 
   my %item;
@@ -238,7 +238,7 @@ sub create_default_hiff {
       };
     }
   }
-  $hiff->{menu}{item} = \%item;
+  $hiff->{album}{item} = \%item;
 
   return $hiff;
 }

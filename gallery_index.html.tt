@@ -3,7 +3,7 @@
     gallery_name = hiff.name;
   END;
   USE Dumper;
-  menu = hiff.menu;
+  album = hiff.album;
 -%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
   "DTD/xhtml1-transitional.dtd">
@@ -69,8 +69,8 @@
   </head>
   <body>
     <h1>[% gallery_name %]</h1>
-    <h2>[% menu.name %]</h2>
-    <p>[% menu.desc %]</p>
+    <h2>[% album.name %]</h2>
+    <p>[% album.desc %]</p>
     [%-
       IF hiff.defined;
         PROCESS hiff_gallery;
@@ -87,8 +87,8 @@
 
 [% BLOCK hiff_gallery %]
     <ul id="gallery">
-      [%- FOREACH dir IN menu.item.keys %]
-        [%- item = menu.item.$dir %]
+      [%- FOREACH dir IN album.item.keys %]
+        [%- item = album.item.$dir %]
         <li>
           <div class="thumbnail">
             <img src="[% item.thumb.src %]"
