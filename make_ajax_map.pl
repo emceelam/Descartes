@@ -8,7 +8,8 @@ use Pod::Usage;
 use Image::Info qw(image_type image_info dim);
 use Template;
 use Data::Dumper;
-use Cwd qw(cwd);
+use Cwd qw(cwd abs_path);
+use File::Util qw(return_path);
 use Text::Wrap qw(wrap);
 use Storable qw(store retrieve);
 use XML::Simple qw(XMLin);
@@ -156,8 +157,14 @@ sub make_gallery {
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
 
-  my $tt = Template->new ();
-  $tt->process(
+
+  my $tt = Template->new ( {
+    INCLUDE_PATH => return_path (abs_path ($0) ),
+    OUTPUT_PATH => abs_path ($gallery_dir),
+  } );
+  die ($Template::ERROR, "\n") if !$tt;
+
+  my $tt_result = $tt->process(
         'gallery_index.html.tt',
         {
           thumbs => \@thumbs,
@@ -165,8 +172,9 @@ sub make_gallery {
           mini_map_max_height => $mini_map_max_height,
           hiff => $hiff,
         },
-        "$gallery_dir/index.html"
+        "index.html"
   );
+  die "Could not create $gallery_dir/index.html.\n" if !$tt_result;
 }
 
 sub scaling {
@@ -186,6 +194,7 @@ sub process_graphic_file {
     return;
   }
   if (-d $source) {
+    $source =~ s{/$}{};
     push @$directories, $source;
     return;
   }
