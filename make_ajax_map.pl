@@ -12,10 +12,11 @@ use Cwd qw(cwd abs_path);
 use File::Util qw(return_path);
 use Text::Wrap qw(wrap);
 use Storable qw(store retrieve);
-use XML::Simple qw(XMLin);
+use XML::Simple qw(XMLin XMLout);
 use List::MoreUtils qw(firstval);
 use Carp qw(croak);
 use Math::Round qw(round);
+use Fatal qw( open close );
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -100,10 +101,12 @@ sub make_gallery {
     $hiff = create_default_hiff ($gallery_dir, \@all_files);
   }
   else {
-    warn "Missing gallery.hiff\n" unless $hiff_file;
     $hiff = XMLin("$gallery_dir/$hiff_file",
                     KeyAttr => { item => 'dir' },
-                    ForceArray => ['item']);
+                    ForceArray => ['item'],
+                    Cache => 'storable',
+    );
+    die "Could not XML process $gallery_dir/$hiff_file" if !$hiff;
   }
 
   my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
@@ -249,6 +252,20 @@ sub create_default_hiff {
   }
   $hiff->{album}{item} = \%item;
 
+  open my $fh, '>', "$gallery_dir/gallery.hiff";
+  my $return_val = XMLout ($hiff,
+                        RootName => 'catalog',
+                        KeyAttr => {'item' => 'dir'},
+                        NoAttr => 1,
+                        AttrIndent => 1,
+                        XMLDecl => 1,
+                        OutputFile => $fh,
+                );
+  close $fh;
+
+  if (!$return_val) {
+    die ("XMLout() fails");
+  }
   return $hiff;
 }
 
