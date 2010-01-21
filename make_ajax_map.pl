@@ -231,7 +231,11 @@ sub create_default_hiff {
   my $hiff = {
     name => "Gallery",
     desc => "Gallery description goes here",
-    album => {},
+    album => {
+      name => "Album",
+      desc => "Album description goes here",
+      secondary_desc => "Secondary description goes here",
+    },
   };
 
   my %item;

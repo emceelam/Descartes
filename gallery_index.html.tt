@@ -29,16 +29,14 @@
       }
       ul#gallery>li {
         float:left;
-        margin:5px;
-        padding:2px;
         width:auto;
         height:auto;
-        border:1px solid transparent;
         clear:none;
+        margin-bottom:5px;
       }
       ul#gallery>li ul{
         border: 1px solid black;
-        background-color: #EEEEEE;
+        background-color: #7eeba0;
         color: #000000;
         display: none;
         position: absolute;
@@ -49,7 +47,6 @@
       ul#gallery>li:hover{
         color: #000000;
         background-color: transparent;
-        border-color: #000000;
       }
       ul#gallery>li:hover ul{
         display: block;
@@ -60,6 +57,19 @@
       div.thumbnail {
         width:  [% mini_map_max_width %]px;
         height: [% mini_map_max_height %]px;
+        padding:2px;
+        border:1px solid transparent;
+      }
+      div.thumbnail:hover {
+        border-color: #000000;
+      }
+      div.thumbnail_name {
+        font: 10px verdana, arial, helvetica, sans-serif;
+        width:  [% mini_map_max_width %]px;
+        height: 1.5em;
+        padding-left:2px;
+        white-space: nowrap;
+        overflow: hidden;
       }
     </style>
     <script type="text/javascript">
@@ -71,17 +81,8 @@
     <h1>[% gallery_name %]</h1>
     <h2>[% album.name %]</h2>
     <p>[% album.desc %]</p>
-    [%-
-      IF hiff.defined;
-        PROCESS hiff_gallery;
-      ELSE;
-        PROCESS thumb_gallery;
-      END;
-    %]
-    <p style="clear:left">
-      This gallery correctly displays under <a href="http://getfirefox.com">
-      Firefox</a>, but languishes under IE6.
-    </p>
+    [% PROCESS hiff_gallery %]
+    <p>[% album.secondary_desc %]</p>
   </body>
 </html>
 
@@ -90,13 +91,17 @@
       [%- FOREACH dir IN album.item.keys %]
         [%- item = album.item.$dir %]
         <li>
+          <div class="thumbnail_name">
+            [% item.name %]
+          </div>
           <div class="thumbnail">
-            <img src="[% item.thumb.src %]"
-                border="0"
-                alt="[% item.name %]" />
+            <a href="[% item.multi_res.file %]">
+              <img src="[% item.thumb.src %]"
+                  border="0"
+                  alt="[% item.name %]" />
+            </a>
           </div>
           <ul>
-            <li>[% item.name %]</li>
             <li>
               <a href="[% item.multi_res.file %]">
                 Multi-res</a>
@@ -114,30 +119,6 @@
               : [% item.hi_res.size %]K
             </li>
             <li>[% item.desc %]</li>
-          </ul>
-        </li>
-      [%- END %]
-    </ul>
-[% END %]
-
-[% BLOCK thumb_gallery %]
-    <ul id="gallery">
-      [%- FOREACH thumb = thumbs %]
-        <li>
-          <div class="thumbnail">
-            <img src="[% thumb.src %]"
-                border="0"
-                width="[% thumb.width %]"
-                height="[% thumb.height %]"
-                alt="[% thumb.caption %]" />
-          </div>
-          <ul>
-            <li>[% thumb.caption %]</li>
-            <li>
-              <a href="[% thumb.full_view %]" alt="[% thumb.caption %]">
-                Full View
-              </a>
-            </li>
           </ul>
         </li>
       [%- END %]
