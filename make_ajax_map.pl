@@ -83,42 +83,44 @@ Take one directory full of graphic files. Call generate on each graphic file.
 Voila a gallery of google style maps.
 =cut
 sub make_gallery {
-  my ($gallery_dir, @gen_parms) = @_;
+  my ($album_dir, @gen_parms) = @_;
 
-  if (! opendir DIR, $gallery_dir)
+  if (! opendir DIR, $album_dir)
   {
     push @problem_files, {
-      file => $gallery_dir,
-      error => "Could not open directory $gallery_dir\n",
+      file => $album_dir,
+      error => "Could not open directory $album_dir\n",
     };
     return;
   }
   my @all_files = readdir DIR;
   closedir DIR;
-  my $hiff_file = firstval { $_ eq 'gallery.hiff' } @all_files;
-  my $hiff;
-  if (!$hiff_file) {
-    $hiff = create_default_hiff ($gallery_dir, \@all_files);
+  my $album_file = firstval { $_ eq 'album.hiff' } @all_files;
+  my $album;
+  if (!$album_file) {
+    $album = create_default_hiff ($album_dir, \@all_files);
   }
   else {
-    $hiff = XMLin("$gallery_dir/$hiff_file",
-                    KeyAttr => { item => 'dir' },
+    $album = XMLin("$album_dir/$album_file",
+                    KeyAttr => [],
                     ForceArray => ['item'],
                     Cache => 'storable',
     );
-    die "Could not XML process $gallery_dir/$hiff_file" if !$hiff;
+    die "Could not XML process $album_dir/$album_file" if !$album;
   }
 
   my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
-  my $H_item = $hiff->{album}{item};
+  my $items = $album->{item};
+  my %album_items;
+  @album_items{ map { $_->{dir} } @$items } = @$items;
   my @thumbs;
   GRAPHIC_FILE:
   foreach my $graphic_file (@graphic_files) {
-    print "Rendering $gallery_dir/$graphic_file\n";
+    print "Rendering $album_dir/$graphic_file\n";
     my $map_maker =
-      Descartes::AjaxMapMaker->new("$gallery_dir/$graphic_file", $gallery_dir);
+      Descartes::AjaxMapMaker->new("$album_dir/$graphic_file", $album_dir);
     my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
-    my $generated_dir = "$gallery_dir/$image_dir";
+    my $generated_dir = "$album_dir/$image_dir";
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
     my ($hi_res_file, $low_res_file, $scales)
@@ -127,12 +129,12 @@ sub make_gallery {
     my $info = image_info ($mini_map_file);
     if (my $error = $info->{error}) {
        push @problem_files, {
-         file => "$gallery_dir/$graphic_file",
+         file => "$album_dir/$graphic_file",
          error => "Can't parse image info: $error",
        };
        next GRAPHIC_FILE;
     }
-    push @rendered_files, "$gallery_dir/$graphic_file";
+    push @rendered_files, "$album_dir/$graphic_file";
     my($mini_map_width, $mini_map_height) = dim($info);
 
     push @thumbs, {
@@ -143,8 +145,8 @@ sub make_gallery {
       height => $mini_map_height,
     };
 
-    # hiff augmentation
-    my $item = $H_item->{$image_dir};
+    # augment the album items with extra meta data
+    my $item = $album_items{$image_dir};
     $item->{thumb} = {
       src => "$image_dir/rendered/$mini_map_name",
       width => $mini_map_width,
@@ -160,10 +162,9 @@ sub make_gallery {
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
 
-
   my $tt = Template->new ( {
     INCLUDE_PATH => return_path (abs_path ($0) ),
-    OUTPUT_PATH => abs_path ($gallery_dir),
+    OUTPUT_PATH => abs_path ($album_dir),
   } );
   die ($Template::ERROR, "\n") if !$tt;
 
@@ -173,11 +174,11 @@ sub make_gallery {
           thumbs => \@thumbs,
           mini_map_max_width => $mini_map_max_width,
           mini_map_max_height => $mini_map_max_height,
-          hiff => $hiff,
+          album => $album,
         },
         "index.html"
   );
-  die "Could not create $gallery_dir/index.html.\n" if !$tt_result;
+  die "Could not create $album_dir/index.html.\n" if !$tt_result;
 }
 
 sub scaling {
@@ -226,40 +227,36 @@ sub process_graphic_file {
 }
 
 sub create_default_hiff {
-  my ($gallery_dir, $all_files) = @_;
+  my ($album_dir, $all_files) = @_;
 
-  my $hiff = {
-    name => "Gallery",
-    desc => "Gallery description goes here",
-    album => {
-      name => "Album",
-      desc => "Album description goes here",
-      secondary_desc => "Secondary description goes here",
-    },
+  my $album = {
+    name => "Album",
+    desc => "Album description goes here",
+    secondary_desc => "Secondary description goes here",
   };
 
-  my %item;
+  my @items;
   GALLERY_ITEM:
   for my $file_name (@$all_files) {
     my ($base_name, $file_ext);
-    if (-d "$gallery_dir/$file_name") {
+    if (-d "$album_dir/$file_name") {
       next GALLERY_ITEM;
     }
     ($base_name, $file_ext)
       = Descartes::AjaxMapMaker::refine_file_name ($file_name);
     if (Descartes::AjaxMapMaker::is_image_file_ext($file_ext)) {
-      $item{$base_name} = {
+      push @items, {
         name => $file_name,
-        desc => "Description goes here",
+        desc => "Thumbnail description goes here",
+        dir => $base_name,
       };
     }
   }
-  $hiff->{album}{item} = \%item;
-
-  open my $fh, '>', "$gallery_dir/gallery.hiff";
-  my $return_val = XMLout ($hiff,
-                        RootName => 'catalog',
-                        KeyAttr => {'item' => 'dir'},
+  $album->{item} = \@items;
+  open my $fh, '>', "$album_dir/album.hiff";
+  my $return_val = XMLout ($album,
+                        RootName => 'album',
+                        KeyAttr => {'item' => 'dir' },
                         NoAttr => 1,
                         AttrIndent => 1,
                         XMLDecl => 1,
@@ -270,7 +267,7 @@ sub create_default_hiff {
   if (!$return_val) {
     die ("XMLout() fails");
   }
-  return $hiff;
+  return $album;
 }
 
 sub get_all_res {
