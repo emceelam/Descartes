@@ -169,7 +169,7 @@ sub make_gallery {
   die ($Template::ERROR, "\n") if !$tt;
 
   my $tt_result = $tt->process(
-        'gallery_index.html.tt',
+        'album_index.html.tt',
         {
           thumbs => \@thumbs,
           mini_map_max_width => $mini_map_max_width,
