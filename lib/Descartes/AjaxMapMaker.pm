@@ -23,6 +23,7 @@ use Carp qw(croak);
 use Storable qw(store retrieve);
 use File::Touch qw(touch);
 use File::Basename qw(dirname);
+use File::Copy qw(move);
 use Data::Dumper;
 
 Readonly our $tile_size => 256;
@@ -133,11 +134,17 @@ sub pdf_to_png {
     my $dpi = round($scale * 72);
     my $output_name = "$rendered_dir/$base_name.png";
 
-    system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
-              "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
-              "-dFirstPage=1 -dLastPage=1 -r$dpi " .
-              "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
-              "-sOutputFile=$output_name $pdf_name");
+    #  system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
+    #            "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
+    #            "-dFirstPage=1 -dLastPage=1 -r$dpi " .
+    #            "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
+    #            "-sOutputFile=$output_name $pdf_name");
+
+    print "gm convert -density $dpi $pdf_name $output_name\n";
+    system ("gm convert -density $dpi $pdf_name $output_name");
+    if (-e "$output_name.0") {
+      move ("$output_name.0", $output_name);
+    }
 
     $info = image_info ($output_name);
     croak "Can't parse image info for $output_name: $error"
@@ -226,7 +233,6 @@ sub tile_image {
 
   if (is_up_to_date (
         source => "$rendered_dir/$file_name", target => $scale_dir)) {
-    print "Already rendered $scale_dir\n";
     return;
   }
   mkpath ($scale_dir,1);
