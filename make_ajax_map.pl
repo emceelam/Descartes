@@ -10,6 +10,8 @@ use Template;
 use Data::Dumper;
 use Cwd qw(cwd abs_path);
 use File::Util qw(return_path);
+use File::Copy qw(cp);
+use File::Spec::Functions qw(splitpath);
 use Text::Wrap qw(wrap);
 use Storable qw(store retrieve);
 use XML::Simple qw(XMLin XMLout);
@@ -17,6 +19,7 @@ use List::MoreUtils qw(firstval);
 use Carp qw(croak);
 use Math::Round qw(round);
 use Fatal qw( open close );
+use Path::Class qw(dir file);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -162,12 +165,25 @@ sub make_gallery {
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
 
+  my $album_path =  abs_path ($album_dir);
   my $tt = Template->new ( {
-    INCLUDE_PATH => return_path (abs_path ($0) ),
-    OUTPUT_PATH => abs_path ($album_dir),
+    INCLUDE_PATH => $album_path,
+    OUTPUT_PATH  => $album_path,
   } );
   die ($Template::ERROR, "\n") if !$tt;
 
+  my @parts = splitpath (abs_path($0));
+  my $descartes_dir = $parts[1];
+  $descartes_dir =~ s{/$}{};
+  my $target = "$album_path/album_index.html.tt";
+  my $source = "$descartes_dir/album_index.html.tt";
+
+  if (!-e $target) {
+    print "Copying $source to $target\n";
+    cp ($source, $target)
+      || die ("Failed to copy $source to $target\n");
+  }
+  
   my $tt_result = $tt->process(
         'album_index.html.tt',
         {
@@ -178,7 +194,8 @@ sub make_gallery {
         },
         "index.html"
   );
-  die "Could not create $album_dir/index.html.\n" if !$tt_result;
+  die ($tt->error() . "\n  Could not create $album_dir/index.html.\n")
+    if !$tt_result;
 }
 
 sub scaling {
