@@ -58,7 +58,7 @@ sub process_next_job {
       = Descartes::AjaxMapMaker->new(
           "$ajax_map_doc_root/$source_file",
           "$ajax_map_doc_root/$target_dir",
-          "index.html.tt");
+        );
     $map_maker->generate();
     $base_name = $map_maker->get_base_name();
   };

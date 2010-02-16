@@ -54,7 +54,7 @@ sub new {
     dest_base => $dest_base,
     base_dir => $base_dir,
     base_name => $base_name,
-    html_template => ($html_template || 'index.html.tt'),
+    html_template => ($html_template || 'map_index.html.tt'),
     rendered_dir => "$base_dir/rendered",
     tiles_dir => "$base_dir/$tiles_subdir",
     tiles_subdir => $tiles_subdir,
