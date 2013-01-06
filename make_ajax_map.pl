@@ -37,7 +37,9 @@ GetOptions (
   'scale:s' => \&scaling,
   '<>' =>
     sub {
-      process_graphic_file (shift, \@source_files,
+      my $obj = shift;
+      my $stringified = "$obj";
+      process_graphic_file ($stringified, \@source_files,
                            \@directories, \@non_existents,
                            \@problem_files, \@rendered_files);
     },
