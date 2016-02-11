@@ -109,7 +109,7 @@ sub make_gallery {
     $album = XMLin("$album_dir/$album_file",
                     KeyAttr => [],
                     ForceArray => ['item'],
-                    Cache => 'storable',
+                    #Cache => 'storable',
     );
     die "Could not XML process $album_dir/$album_file" if !$album;
   }
