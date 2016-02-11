@@ -191,8 +191,9 @@ sub create_scaled_down_image {
                      xpixels => $p{max_width}, 
                      ypixels => $p{max_height},
                      type=>'min');
+
   $scaled_img->write (file => "$rendered_dir/$target")
-    || die "Could not write $rendered_dir/$target: " . $img->errstr . "\n";
+    || die "Could not write $rendered_dir/$target: " . $scaled_img->errstr . "\n";
 }
 
 sub create_hi_res {
