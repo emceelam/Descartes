@@ -24,6 +24,7 @@ use Path::Class qw(dir file);
 pod2usage (-verbose => 1) if !@ARGV;
 
 my $f_quiet = 0;
+my $url_root = '';
 my @source_files;
 my @directories;
 my @non_existents;
@@ -33,8 +34,9 @@ my %gen_parms;
 $Data::Dumper::Indent = 1;
 
 GetOptions (
-  'quiet' => \$f_quiet,
-  'scale:s' => \&scaling,
+  'quiet'      => \$f_quiet,
+  'scale:s'    => \&scaling,
+  'url_root:s' => \$url_root,
   '<>' =>
     sub {
       my $obj = shift;
@@ -126,6 +128,7 @@ sub make_gallery {
       Descartes::AjaxMapMaker->new("$album_dir/$graphic_file", $album_dir);
     my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
     my $generated_dir = "$album_dir/$image_dir";
+    my $url_dir = $url_root ? "$url_root/$image_dir" : $image_dir;
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
     my ($hi_res_file, $low_res_file, $scales)
@@ -143,8 +146,7 @@ sub make_gallery {
     my($mini_map_width, $mini_map_height) = dim($info);
 
     push @thumbs, {
-      src => "$image_dir/rendered/$mini_map_name",
-      full_view => "$image_dir/index.html",
+      src => "$url_dir/rendered/$mini_map_name",
       caption => $graphic_file,
       width => $mini_map_width,
       height => $mini_map_height,
@@ -153,16 +155,16 @@ sub make_gallery {
     # augment the album items with extra meta data
     my $item = $album_items{$image_dir};
     $item->{thumb} = {
-      src => "$image_dir/rendered/$mini_map_name",
+      src => "$url_dir/rendered/$mini_map_name",
       width => $mini_map_width,
       height => $mini_map_height,
     };
-    $item->{multi_res}{file} = "$image_dir/index.html";
+    $item->{multi_res}{file} = "$url_dir/index.html";
     $item->{multi_res}{scale_desc} = $scale_desc;
-    $item->{low_res}{file} = "$image_dir/rendered/$low_res_file";
+    $item->{low_res}{file} = "$url_dir/rendered/$low_res_file";
     $item->{low_res}{size}
       = round ((stat "$generated_dir/rendered/$low_res_file")[7] / 1024);
-    $item->{hi_res}{file} = "$image_dir/rendered/$hi_res_file";
+    $item->{hi_res}{file} = "$url_dir/rendered/$hi_res_file";
     $item->{hi_res}{size}
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
@@ -324,9 +326,21 @@ necessary to support a google style map.
 Sets the scale factors for the renders. For example, 75%, 100%, 125% and 150% is
 represented as 
 
---scale=0.75,1,1.25,1.50
+  --scale=0.75,1,1.25,1.50
 
 Please, no spaces.
+
+=head2 --url_root (optional)
+
+Specify an absolute url path of your album
+
+  --url_root=http://localhost/album_path
+
+Alternatively, specify the absolute path only, allowing the browser
+to fill the http scheme and domain name.
+
+  --url_root=/album_path
+
 
 =head2 --help
 
