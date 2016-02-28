@@ -2,7 +2,7 @@
   USE Dumper;
 -%]
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "DTD/xhtml1-transitional.dtd">
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <!-- AUTHOR: Emcee Lam -->
 
 <html xmlns="http://www.w3.org/1999/xhtml"
@@ -51,8 +51,8 @@
         display: block;
       }
       div.thumb_map {
-        width:  [% mini_map_max_width + 6 %]px;
-        height: [% mini_map_max_height + 6 %]px;
+        width:  [% mini_map_max_width %]px;
+        height: [% mini_map_max_height %]px;
         padding:2px;
         border:1px solid transparent;
       }
@@ -77,10 +77,10 @@
     </script>
   </head>
   <body>
-    <h2>[% album.name %]</h2>
-    <p>[% album.desc %]</p>
+    <h2>[% album.name | html %]</h2>
+    <p>[% album.desc | html%]</p>
     [% PROCESS hiff_gallery %]
-    <p>[% album.secondary_desc %]</p>
+    <p>[% album.secondary_desc | html %]</p>
   </body>
 </html>
 
@@ -89,19 +89,19 @@
       [%- FOREACH item IN album.item %]
         <li>
           <div class="thumb_map_name">
-            [% item.name %]
+            [% item.name | html %]
           </div>
           <div class="thumb_map">
             <a href="[% item.multi_res.file %]">
               <img src="[% item.thumb.src %]"
-                   alt="[% item.name %]" />
+                   alt="[% item.name | html %]" />
             </a>
           </div>
           <ul>
             <li>
               <a href="[% item.multi_res.file %]">
                 Multi-res</a>
-              : [% item.multi_res.scale_desc %]
+              : [% item.multi_res.scale_desc | html %]
             </li>
             <li>
               <a href="[% item.low_res.file %]">
@@ -113,7 +113,7 @@
                 Hi-res</a>
               : [% item.hi_res.size %]K
             </li>
-            <li>[% item.desc %]</li>
+            <li>[% item.desc | html %]</li>
           </ul>
         </li>
       [%- END %]
