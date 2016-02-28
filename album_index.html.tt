@@ -50,6 +50,7 @@
         padding:2px;
         border:1px solid transparent;
         box-sizing: content-box;
+          /* undo bootstrap's box-sizing setting */
       }
       div.thumb_map:hover {
         border-color: #000000;
