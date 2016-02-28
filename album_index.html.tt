@@ -50,22 +50,25 @@
       ul#gallery img{
         display: block;
       }
-      div.thumbnail {
-        width:  [% mini_map_max_width %]px;
-        height: [% mini_map_max_height %]px;
+      div.thumb_map {
+        width:  [% mini_map_max_width + 6 %]px;
+        height: [% mini_map_max_height + 6 %]px;
         padding:2px;
         border:1px solid transparent;
       }
-      div.thumbnail:hover {
+      div.thumb_map:hover {
         border-color: #000000;
       }
-      div.thumbnail_name {
+      div.thumb_map_name {
         font: 10px verdana, arial, helvetica, sans-serif;
         width:  [% mini_map_max_width %]px;
         height: 1.5em;
         padding-left:2px;
         white-space: nowrap;
         overflow: hidden;
+      }
+      img {
+        border:0;
       }
     </style>
     <script type="text/javascript">
@@ -85,14 +88,13 @@
     <ul id="gallery">
       [%- FOREACH item IN album.item %]
         <li>
-          <div class="thumbnail_name">
+          <div class="thumb_map_name">
             [% item.name %]
           </div>
-          <div class="thumbnail">
+          <div class="thumb_map">
             <a href="[% item.multi_res.file %]">
               <img src="[% item.thumb.src %]"
-                  border="0"
-                  alt="[% item.name %]" />
+                   alt="[% item.name %]" />
             </a>
           </div>
           <ul>
@@ -105,7 +107,6 @@
               <a href="[% item.low_res.file %]">
                 Low-res</a>
               : [% item.low_res.size %]K
-            </li>
             </li>
             <li>
               <a href="[% item.hi_res.file %]">
