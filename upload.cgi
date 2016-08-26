@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
+use warnings;
 use strict;
 use Fcntl qw(:flock);
 use CGI qw(:standard uploadInfo cgi_error);

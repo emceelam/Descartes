@@ -5,6 +5,8 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw ( get_now_string send_mail become_daemon open_pid_file);
 
+use warnings;
+use strict;
 use DateTime;
 use DateTime::Format::MySQL;
 use Readonly;
@@ -65,8 +67,12 @@ sub open_pid_file {
     warn "Removing PID file for defunct server process $pid.\n";
     die  "Can't unlink PID file $file" unless -w $file && unlink $file;
   }
-  return IO::File->new ($file, O_WRONLY|O_CREAT|O_EXCL, 0644)
-    or die "Can't create $file: $!\n";
+  my $io_file = IO::File->new ($file, O_WRONLY|O_CREAT|O_EXCL, 0644);
+  if (!$io_file) {
+    die "Can't create $file: $!\n";
+  }
+
+  return $io_file;
 }
 
 

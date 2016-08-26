@@ -1,5 +1,6 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
+use warnings;
 use strict;
 use Descartes::AjaxMapMaker qw($mini_map_max_width $mini_map_max_height
       $mini_map_name);

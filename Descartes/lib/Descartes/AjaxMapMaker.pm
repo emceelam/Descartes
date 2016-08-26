@@ -6,6 +6,7 @@ require Exporter;
 @EXPORT_OK = qw ( $mini_map_max_width $mini_map_max_height $mini_map_name
                   $tile_size refine_file_name is_image_file_ext);
 
+use warnings;
 use strict;
 use Imager;
 use Image::Info qw(image_info dim);

@@ -1,7 +1,8 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl
 
 # This is a polling serving that will pick up any jobs in the queue
 
+use warnings;
 use strict;
 use Fcntl qw(:seek :flock);
 use Text::CSV;
