@@ -1,0 +1,11 @@
+{
+  "tile_size":256,
+  "mini_map_max_width":200,
+  "mini_map_max_height":200,
+  "mini_map_name":"mini_map.png",
+  "thumbnail_max_width":100,
+  "thumbnail_max_height":100,
+  "thumbnail_name":"thumbnail.png",
+  "low_res_max_width":640,
+  "low_res_max_height":480
+}
