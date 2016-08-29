@@ -154,10 +154,6 @@ sub _build_target_file_ext {
 }
 
 
-sub is_image_file_ext {
-  return defined(get_target_file_ext (shift));
-}
-
 # Render the current pdf into multiple scales and
 # return the scales and file names.
 #   [ [ scale1, filename1 ],
