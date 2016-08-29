@@ -13,7 +13,7 @@ use Fatal qw(open close seek truncate);
 use Cwd qw(abs_path);
 use File::Basename qw(dirname);
 use Config::Std qw(read_config);
-use Descartes::AjaxMapMaker;
+use Descartes::MapMaker;
 use Descartes::Tools qw(get_now_string send_mail become_daemon open_pid_file);
 
 my $descartes_dir = dirname(abs_path($0));
@@ -56,9 +56,9 @@ sub process_next_job {
 
   eval {
     my $map_maker
-      = Descartes::AjaxMapMaker->new(
-          "$ajax_map_doc_root/$source_file",
-          "$ajax_map_doc_root/$target_dir",
+      = Descartes::MapMaker->new(
+          source_file => "$ajax_map_doc_root/$source_file",
+          dest_dir    => "$ajax_map_doc_root/$target_dir",
         );
     $map_maker->generate();
     $base_name = $map_maker->get_base_name();
