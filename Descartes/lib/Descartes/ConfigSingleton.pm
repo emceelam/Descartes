@@ -18,7 +18,7 @@ sub validate {
   foreach my $k (qw(
     tile_size mini_map_max_width mini_map_max_height mini_map_name 
     thumbnail_max_width thumbnail_max_height thumbnail_name
-    low_res_max_width low_res_max_height
+    low_res_max_width low_res_max_height tiles_subdir
   ))
   {
     return 0 if !defined $config->{$k};

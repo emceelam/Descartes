@@ -7,5 +7,6 @@
   "thumbnail_max_height":100,
   "thumbnail_name":"thumbnail.png",
   "low_res_max_width":640,
-  "low_res_max_height":480
+  "low_res_max_height":480,
+  "tiles_subdir":"tiles",
 }
