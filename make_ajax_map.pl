@@ -2,8 +2,6 @@
 
 use warnings;
 use strict;
-use Descartes::AjaxMapMaker qw($mini_map_max_width $mini_map_max_height
-      $mini_map_name);
 use Getopt::Long qw(:config gnu_getopt auto_help);
 use Pod::Usage;
 use Image::Info qw(image_type image_info dim);
@@ -21,6 +19,10 @@ use Carp qw(croak);
 use Math::Round qw(round);
 use Fatal qw( open close );
 use Path::Class qw(dir file);
+
+use Descartes::MapMaker;
+use Descartes::ConfigSingleton;
+use Descartes::Lib qw(refine_file_name);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -50,11 +52,16 @@ GetOptions (
 
 $gen_parms{f_quiet} = $f_quiet if $f_quiet;
 
-SOURCE_FILE:
+my $config = Descartes::ConfigSingleton->new()->config();
+my $mini_map_max_width  = $config->{mini_map_max_width};
+my $mini_map_max_height = $config->{mini_map_max_height};
+my $mini_map_name       = $config->{mini_map_name};
+
 foreach my $source_file (@source_files) {
   print "Rendering $source_file\n";
   eval {
-    Descartes::AjaxMapMaker->new($source_file)->generate(%gen_parms);
+    Descartes::MapMaker->new( source_file => $source_file )
+                       ->generate(%gen_parms);
   };
   if ($@) {
     push @problem_files, {file => $source_file, error => $@};
@@ -122,11 +129,12 @@ sub make_gallery {
   my %album_items;
   @album_items{ map { $_->{dir} } @$items } = @$items;
   my @thumbs;
-  GRAPHIC_FILE:
   foreach my $graphic_file (@graphic_files) {
     print "Rendering $album_dir/$graphic_file\n";
-    my $map_maker =
-      Descartes::AjaxMapMaker->new("$album_dir/$graphic_file", $album_dir);
+    my $map_maker = Descartes::MapMaker->new(
+      source_file => "$album_dir/$graphic_file",
+      dest_dir    => $album_dir,
+    );
     my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
     my $generated_dir = "$album_dir/$image_dir";
     my $url_dir = $url_root ? "$url_root/$image_dir" : $image_dir;
@@ -141,16 +149,16 @@ sub make_gallery {
          file => "$album_dir/$graphic_file",
          error => "Can't parse image info: $error",
        };
-       next GRAPHIC_FILE;
+       next;
     }
     push @rendered_files, "$album_dir/$graphic_file";
     my($mini_map_width, $mini_map_height) = dim($info);
 
     push @thumbs, {
-      src => "$url_dir/rendered/$mini_map_name",
+      src     => "$url_dir/rendered/$mini_map_name",
       caption => $graphic_file,
-      width => $mini_map_width,
-      height => $mini_map_height,
+      width   => $mini_map_width,
+      height  => $mini_map_height,
     };
 
     # augment the album items with extra meta data
@@ -193,7 +201,7 @@ sub make_gallery {
         'album_index.html.tt',
         {
           thumbs => \@thumbs,
-          mini_map_max_width => $mini_map_max_width,
+          mini_map_max_width  => $mini_map_max_width,
           mini_map_max_height => $mini_map_max_height,
           album => $album,
         },
@@ -258,19 +266,16 @@ sub create_default_hiff {
   };
 
   my @items;
-  GALLERY_ITEM:
+
   for my $file_name (@$all_files) {
-    my ($base_name, $file_ext);
-    if (-d "$album_dir/$file_name") {
-      next GALLERY_ITEM;
-    }
-    ($base_name, $file_ext)
-      = Descartes::AjaxMapMaker::refine_file_name ($file_name);
-    if (Descartes::AjaxMapMaker::is_image_file_ext($file_ext)) {
+    next if -d "$album_dir/$file_name";
+
+    if (image_type($file_name)->{error}) {
+      my $refined_name = refine_file_name ($file_name);
       push @items, {
         name => $file_name,
         desc => "Thumbnail description goes here",
-        dir => $base_name,
+        dir => $refined_name,
       };
     }
   }
