@@ -1,7 +1,8 @@
-use strict;
-use warnings;
 package Descartes;
 
-# ABSTRACT: turns baubles into trinkets
+use strict;
+use warnings;
+
+# ABSTRACT: Create Google Style maps from high resolution images.
 
 1;
