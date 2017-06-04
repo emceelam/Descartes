@@ -1,9 +1,4 @@
 [%
-  zoom_button_offset = 12;
-  zoom_panel_width = 32;
-  zoom_panel_height = dimensions.size * zoom_button_offset + 5;
-  zoom_panel_color = "blue";
-  zoom_button_color = "#c5eec5";
   magnifier_color = "black";
 -%]
 <!DOCTYPE html>
@@ -14,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>
-      AJAX Map
+      Raster Tile Map
     </title>
 
     <!-- Latest compiled and minified CSS -->
@@ -52,29 +47,19 @@
         background:#00cdcd;
         font: normal 10px sans-serif;
       }
-      #zoomPanel {
+      #zoomButtonDiv {
         position: absolute;
         left:5px;
         top:5px;
-        border: 1px solid black;
-        width: [% zoom_panel_width %]px;
-        height: [% zoom_panel_height %]px;
         z-index:1;
       }
-      #translucent {
-        width: [% zoom_panel_width %]px;
-        height: [% zoom_panel_height %]px;
-        background-color: [% zoom_panel_color %];
-        filter:alpha(opacity=15);
-        -moz-opacity:0.15;
-        opacity: 0.15;
+      .button-map {
+        opacity: 0.55;
+        color: #333;
+        background-color: #fff
       }
-      #opaque {
-        width: [% zoom_panel_width %]px;
-        height: [% zoom_panel_height %]px;
-        background-color: transparent;
-        position: absolute;
-        z-index: 2;
+      .button-map:hover, .button-map:active:focus, .button-map:focus, .button-map:active {
+        opacity: 0.75;
       }
       #magnifier {
         position:absolute;
@@ -437,8 +422,8 @@
             innerDiv.removeChild(imgs[0]);
           }
 
-          var oldLeft   = innerDiv.offsetLeft;
-          var oldTop    = innerDiv.offsetTop;
+          var oldLeft   = innerDiv.offsetLeft -1;
+          var oldTop    = innerDiv.offsetTop -1;
 
           var newLeft = Math.round(newZ.width  * oldLeft / oldZ.width);
           var newTop  = Math.round(newZ.height * oldTop  / oldZ.height);
@@ -448,6 +433,18 @@
           this.zoom = newZoom;  // set the global zoom
           this.setInnerDivSize (newZ.width, newZ.height, newZ.scale);
           this.checkTiles();
+        }
+
+      MainMap.prototype.incrZoom =
+        function () {
+          var newZoom = Math.min(this.zoom + 1, [% dimensions.size - 1 %]);
+          this.setZoom(newZoom);
+        }
+
+      MainMap.prototype.decrZoom =
+        function () {
+          var newZoom = Math.max(this.zoom - 1, 0);
+          this.setZoom(newZoom);
         }
 
       function atoi (s) {
@@ -464,28 +461,21 @@
 
     <div class="container-fluid">
 
-      <h1>AJAX Map (Beta)</h1>
+      <h1>Raster Tile Map Generator (Beta)</h1>
 
       <!-- main map -->
       <div class="col-md-6">
         <div id="outerDiv">
-          <div id="zoomPanel">
-            <div id="opaque">
-              [%- FOREACH dim = dimensions %]
-                <!-- zoom [% loop.index %]: [% dim.width %], [% dim.height %] -->
-                <div style="position:absolute;
-                            top:[% loop.index * zoom_button_offset + 5 %]px;
-                            left:5px;
-                            width:20px; height:5px;
-                            font-size: 0px;
-                            border:solid 1px black;
-                            background: [% zoom_button_color %];"
-                    onclick="mainMap.setZoom([% loop.index %])">
-                </div>
-              [%- END %]
-            </div>
-            <div id="translucent">
-            </div>
+          <div id="zoomButtonDiv" class="btn-group" role="group"
+               aria-label="zoom buttons">
+            <button type="button" class="btn button-map"
+                    onclick="mainMap.incrZoom()">
+              <span class="glyphicon glyphicon-plus"></span>
+            </button>
+            <button type="button" class="btn button-map"
+                    onclick="mainMap.decrZoom()">
+              <span class="glyphicon glyphicon-minus"></span>
+            </button>
           </div>
           <div id="innerDiv">
           </div>
