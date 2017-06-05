@@ -93,10 +93,9 @@ if (@problem_files) {
   print "\n";
 }
 
-=head1 make_gallery
-Take one directory full of graphic files. Call generate on each graphic file.
-Voila a gallery of google style maps.
-=cut
+# make_gallery
+# Take one directory full of graphic files. Call generate on each graphic file.
+# Voila a gallery of google style maps.
 sub make_gallery {
   my ($album_dir, @gen_parms) = @_;
 
