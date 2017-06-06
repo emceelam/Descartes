@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
 
-    <title>[% album.name %]</title>
+    <title>Raster Tile Map Generator</title>
 
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
@@ -87,12 +87,11 @@
   </head>
   <body>
     <div class="container-fluid">
-      <h2>[% album.name | html %]</h2>
-      <p>[% album.desc | html%]</p>
+      <h1>Raster Tile Map Generator</h1>
+      <p>Google-style maps can be generated with any hi-res image.</p>
       [% PROCESS hiff_gallery %]
-      <p>[% album.secondary_desc | html %]</p>
     </div>
-    
+
     <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <!-- Latest compiled and minified JavaScript -->
@@ -105,19 +104,19 @@
       [%- FOREACH item IN album.item %]
         <li>
           <div class="thumb_map_name">
-            [% item.name | html %]
+            [% item.name %]
           </div>
           <div class="thumb_map">
             <a href="[% item.multi_res.file %]">
               <img src="[% item.thumb.src %]"
-                   alt="[% item.name | html %]" />
+                   alt="[% item.name %]" />
             </a>
           </div>
           <ul>
             <li>
               <a href="[% item.multi_res.file %]">
                 Multi-res</a>
-              : [% item.multi_res.scale_desc | html %]
+              : [% item.multi_res.scale_desc %]
             </li>
             <li>
               <a href="[% item.low_res.file %]">
@@ -129,7 +128,7 @@
                 Hi-res</a>
               : [% item.hi_res.size %]K
             </li>
-            <li>[% item.desc | html %]</li>
+            <li>[% item.desc %]</li>
           </ul>
         </li>
       [%- END %]

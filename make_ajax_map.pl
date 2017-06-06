@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 use warnings;
 use strict;
@@ -6,6 +6,7 @@ use Getopt::Long qw(:config gnu_getopt auto_help);
 use Pod::Usage;
 use Image::Info qw(image_type image_info dim);
 use Template;
+use Template::Stash::AutoEscape;
 use Data::Dumper;
 use Cwd qw(cwd abs_path);
 use File::Util qw(return_path);
@@ -181,6 +182,7 @@ sub make_gallery {
   my $tt = Template->new ( {
     INCLUDE_PATH => $album_path,
     OUTPUT_PATH  => $album_path,
+    STASH => Template::Stash::AutoEscape->new(),
   } );
   die ($Template::ERROR, "\n") if !$tt;
 
@@ -258,14 +260,8 @@ sub process_graphic_file {
 sub create_default_hiff {
   my ($album_dir, $all_files) = @_;
 
-  my $album = {
-    name => "Album",
-    desc => "Album description goes here",
-    secondary_desc => "Secondary description goes here",
-  };
-
+  my $album = {};
   my @items;
-
   for my $file_name (@$all_files) {
     next if -d "$album_dir/$file_name";
 
