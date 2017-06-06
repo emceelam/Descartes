@@ -2,24 +2,25 @@
 
 use warnings;
 use strict;
+use Fatal qw( open close );
+
 use Getopt::Long qw(:config gnu_getopt auto_help);
 use Pod::Usage;
 use Image::Info qw(image_type image_info dim);
 use Template;
 use Template::Stash::AutoEscape;
-use Data::Dumper;
 use Cwd qw(cwd abs_path);
-use File::Util qw(return_path);
 use File::Copy qw(cp);
 use File::Spec::Functions qw(splitpath);
 use Text::Wrap qw(wrap);
-use Storable qw(store retrieve);
 use XML::Simple qw(XMLin XMLout);
 use List::MoreUtils qw(firstval);
 use Carp qw(croak);
 use Math::Round qw(round);
-use Fatal qw( open close );
 use Path::Class qw(dir file);
+use Log::Any ();
+use Log::Any::Adapter ('Stdout');
+use Data::Dumper;
 
 use Descartes::MapMaker;
 use Descartes::ConfigSingleton;
@@ -35,6 +36,7 @@ my @non_existents;
 my @problem_files;
 my @rendered_files;
 my %gen_parms;
+my $log = Log::Any->get_logger;
 $Data::Dumper::Indent = 1;
 
 GetOptions (
@@ -59,7 +61,7 @@ my $mini_map_max_height = $config->{mini_map_max_height};
 my $mini_map_name       = $config->{mini_map_name};
 
 foreach my $source_file (@source_files) {
-  print "Rendering $source_file\n";
+  $log->info("Rendering $source_file");
   eval {
     Descartes::MapMaker->new( source_file => $source_file )
                        ->generate(%gen_parms);
@@ -76,22 +78,19 @@ foreach my $dir (@directories) {
 }
 
 if (@rendered_files) {
-  print "Rendered files\n";
-  print map {"  $_\n"} @rendered_files;
-  print "\n";
+  $log->info("Rendered files");
+  $log->info(join '', map {"  $_\n"} @rendered_files);
 }
 if (@non_existents) {
-  print "Non-existent files\n";
-  print map {"  $_\n"} @non_existents;
-  print "\n";
+  $log->info("Non-existent files");
+  $log->info(join '', map {"  $_\n"} @non_existents);
 }
 if (@problem_files) {
-  print "Problem files\n";
+  $log->info("Problem files");
   foreach my $problem (@problem_files) {
-    print "  " . $problem->{file} . ":\n";
-    print wrap ("    ", "    ", $problem->{error}) . "\n";
+    $log->info("  " . $problem->{file} . ":");
+    $log->info(wrap ("    ", "    ", $problem->{error}));
   }
-  print "\n";
 }
 
 # make_gallery
@@ -121,7 +120,8 @@ sub make_gallery {
                     ForceArray => ['item'],
                     #Cache => 'storable',
     );
-    die "Could not XML process $album_dir/$album_file" if !$album;
+    die "Could not XML process $album_dir/$album_file"
+      if !$album;
   }
 
   my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
@@ -130,7 +130,7 @@ sub make_gallery {
   @album_items{ map { $_->{dir} } @$items } = @$items;
   my @thumbs;
   foreach my $graphic_file (@graphic_files) {
-    print "Rendering $album_dir/$graphic_file\n";
+    $log->info("Rendering $album_dir/$graphic_file");
     my $map_maker = Descartes::MapMaker->new(
       source_file => "$album_dir/$graphic_file",
       dest_dir    => $album_dir,
@@ -193,7 +193,7 @@ sub make_gallery {
   my $source = "$descartes_dir/album_index.html.tt";
 
   if (!-e $target) {
-    print "Copying $source to $target\n";
+    $log->info("Copying $source to $target");
     cp ($source, $target)
       || die ("Failed to copy $source to $target\n");
   }
