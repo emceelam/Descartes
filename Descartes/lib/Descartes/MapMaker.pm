@@ -11,15 +11,13 @@ use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
 use File::Path qw(mkpath rmtree);
+use File::Touch qw(touch);
+use File::Basename qw(dirname);
 use Params::Validate qw(validate ARRAYREF BOOLEAN SCALAR);
 use Math::Round qw(round);
 use Cwd qw(cwd abs_path);
-use List::MoreUtils qw(firstval);
 use Carp qw(croak);
-use Storable qw(store retrieve);
-use File::Touch qw(touch);
-use File::Basename qw(dirname);
-use File::Copy qw(move);
+use Log::Any ();
 use Data::Dumper;
 use Descartes::ConfigSingleton;
 use Descartes::Lib qw(refine_file_name);
@@ -48,6 +46,11 @@ has 'config' => (
   isa     => 'HashRef',
   lazy    => 1,
   builder => '_build_config',
+);
+
+has 'log' => (
+  is      => 'ro',
+  default => sub { Log::Any->get_logger },
 );
 
 has 'refined_name' => (
@@ -161,6 +164,7 @@ sub _build_target_file_ext {
 #     ... ]
 sub pdf_to_png {
   my ($self) = @_;
+  my $log          = $self->log;
   my $base_dir     = $self->base_dir;
   my $base_name    = $self->refined_name;
   my $rendered_dir = $self->rendered_dir;
@@ -190,7 +194,7 @@ sub pdf_to_png {
     #            "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
     #            "-sOutputFile=$output_name $pdf_name");
 
-    print "gm convert -density $dpi $pdf_name $output_name\n";
+    $log->info("gm convert -density $dpi $pdf_name $output_name");
     system ("gm convert -density $dpi $pdf_name $output_name");
     if (-e "$output_name.0") {
       move ("$output_name.0", $output_name);
@@ -204,7 +208,7 @@ sub pdf_to_png {
     my $dest_file_name =
       "w${width}_h${height}_scale${percent_scale}.png";
     rename "$rendered_dir/$base_name.png", "$rendered_dir/$dest_file_name";
-    print "rendered $dest_file_name\n";
+    $log->info("rendered $dest_file_name");
     push @scale_and_files, [ $scale, $dest_file_name ];
   }
 
@@ -226,13 +230,14 @@ sub create_scaled_down_image {
   my $file_name = $p{source};
   my $target = $p{target};
   my $rendered_dir = $self->rendered_dir;
+  my $log          = $self->log;
 
   return if is_up_to_date(
                   source => "$rendered_dir/$file_name",
                   target => "$rendered_dir/$target",
                 );
 
-  print "Create $target based on $file_name\n";
+  $log->info("Create $target based on $file_name");
   my $img = Imager->new();
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
@@ -255,7 +260,8 @@ sub create_hi_res {
 sub create_low_res {
   my ($self, $file_name) = @_;
   my $rendered_dir = $self->rendered_dir;
-  my $ext = $self->target_file_ext;
+  my $log          = $self->log;
+  my $ext          = $self->target_file_ext;
   my $low_res_name = "low_res.$ext"; 
 
   return if is_up_to_date(
@@ -263,7 +269,7 @@ sub create_low_res {
                   target => "$rendered_dir/$low_res_name",
                 );
 
-  print "Rendering $rendered_dir/$low_res_name\n";
+  $log->info("Rendering $rendered_dir/$low_res_name");
   my $img = Imager->new();
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
@@ -281,8 +287,9 @@ sub tile_image {
   my $config       = $self->config;
   my $rendered_dir = $self->rendered_dir;
   my $base_dir     = $self->base_dir;
-  my $scale_dir = "$base_dir/scale" . ($scale * 100);
+  my $log          = $self->log;
 
+  my $scale_dir = "$base_dir/scale" . ($scale * 100);
   if (is_up_to_date (
         source => "$rendered_dir/$file_name", target => $scale_dir)) {
     return;
@@ -291,10 +298,10 @@ sub tile_image {
 
   # More variable initialization
   my $base_name = $self->refined_name;
-  my $file_ext = $self->target_file_ext;
+  my $file_ext  = $self->target_file_ext;
   my ($img_width, $img_height) =
     $file_name =~ m/w(\d+)_h(\d+)_scale(?:\d+)\.(?:png|gif|jpg)$/;
-  print "$base_name, $img_width, $img_height\n";
+  $log->info("$base_name, $img_width, $img_height");
   my $img = Imager->new;
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr;
@@ -315,11 +322,12 @@ sub tile_image {
         || die "Cannot write tile $tile_name: ". $tile_img->errstr();
       $tile_cnt++;
     }
-    print "Finished row $y. Tiles written so far: $tile_cnt\n"
-      if ($y & 0x1) == 0;   # even rows only
+    if ( ($y & 0x1) == 0 ) {   # even rows only
+      $log->info("Finished row $y. Tiles written so far: $tile_cnt");
+    }
   }
   touch($scale_dir);
-  print "Total tiles written: $tile_cnt\n";
+  $log->info("Total tiles written: $tile_cnt");
 }
 
 sub generate_html {
@@ -365,10 +373,11 @@ sub zip_files {
   my $dest_dir  = $self->dest_dir;
   my $base_name = $self->refined_name;
   my $base_dir  = $base_name;
+  my $log       = $self->log;
   my $zip = Archive::Zip->new();
   my $cwd = cwd();
 
-  print "creating zip archive\n";
+  $log->info("creating zip archive");
   chdir($dest_dir) || die "zip_files() could not chdir\n";
   die "At ". cwd(). ", where is directory $base_dir?"
     if !-d $base_dir;
@@ -402,6 +411,7 @@ sub scale_raster_image {
   my $rendered_dir = $self->rendered_dir;
   my $base_name    = $self->refined_name;
   my $file_ext     = $self->target_file_ext;
+  my $log          = $self->log;
   my ($width, $height);
   my $scale;
   my @scale_and_files;
@@ -429,12 +439,12 @@ sub scale_raster_image {
       . $scale * 100 . ".$file_ext";
 
     if ($scale == 1) {
-      print "Copied $dest_file_name\n";
+      $log->info("Copied $dest_file_name");
       copy $source_file, "$rendered_dir/$dest_file_name"
         || die "unable to write $dest_file_name\n";
     }
     else {
-      print "Rendered $dest_file_name\n";
+      $log->info("Rendered $dest_file_name");
       $scaled_img->write (file => "$rendered_dir/$dest_file_name")
         or die $scaled_img->errstr;
     }
