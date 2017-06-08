@@ -12,6 +12,7 @@ sub refine_file_name {
   my $source_file = shift;
 
   my ($refined_name, $file_ext) = $source_file =~ m{(?:.*/)?(.*)\.([^.]+)$};
+    # almost File::Basename::fileparse(), but we exclude the file suffix '.'
   if (!$refined_name || !$file_ext) {
     return;
   }
@@ -28,3 +29,4 @@ sub refine_file_name {
 
 
 1;
+
