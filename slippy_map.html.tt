@@ -86,12 +86,10 @@
         <div id="outerDiv">
           <div id="zoomButtonDiv" class="btn-group" role="group"
                aria-label="zoom buttons">
-            <button type="button" class="btn button-map"
-                    onclick="mainMap.incrZoom()">
+            <button id="incrZoom" type="button" class="btn button-map">
               <span class="glyphicon glyphicon-plus"></span>
             </button>
-            <button type="button" class="btn button-map"
-                    onclick="mainMap.decrZoom()">
+            <button id="decrZoom" type="button" class="btn button-map">
               <span class="glyphicon glyphicon-minus"></span>
             </button>
           </div>

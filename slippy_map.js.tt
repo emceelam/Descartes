@@ -14,6 +14,12 @@ function mapInit() {
   miniMapInner.onmouseup
     = function (event) { return magnifier.stopMove(event) };
   miniMapInner.ondragstart = function() { return false; } // for IE
+
+  var buttonIncrZoom = document.getElementById("incrZoom");
+  buttonIncrZoom.onclick = function() { mainMap.incrZoom() };
+
+  var buttonDecrZoom = document.getElementById("decrZoom");
+  buttonDecrZoom.onclick = function() { mainMap.decrZoom() };
 }
 
 function Magnifier () {
