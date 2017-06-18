@@ -346,8 +346,8 @@ sub generate_html {
 
   my $tt = Template->new (INCLUDE_PATH => $self->descartes_dir);
   my %template_to_output = (
-    'map_index.html.tt' => 'index.html',
-    'slippy_map.js.tt'  => 'slippy_map.js',
+    'slippy_map.html.tt' => 'index.html',
+    'slippy_map.js.tt'   => 'slippy_map.js',
   );
 
   while (my ($template_file, $output_file) = each %template_to_output) {
