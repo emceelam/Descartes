@@ -1,4 +1,0 @@
-# This is a sample configuration file for Lambert's computer, Ophelia.
-
-[dir]
-ajax_map_doc_root: /home/www/ajax_map
