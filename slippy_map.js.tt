@@ -1,10 +1,7 @@
 
-var mainMap;
-var magnifier;
-
 function mapInit() {
-  magnifier = new Magnifier();
-  mainMap = new MainMap();
+  var magnifier = Singleton.getMagnifier();
+  var mainMap   = Singleton.getMainMap();
 
   var miniMapInner = document.getElementById("miniMapInner");
   miniMapInner.onmousedown
@@ -35,13 +32,32 @@ function Magnifier () {
     = function (event) { return this1.stopMove(event) };
 }
 
+var Singleton = (function () {
+  var instanceMagnifier;
+  var instanceMainMap;
+
+  return {
+    getMagnifier: function () {
+      if (!instanceMagnifier) {
+        instanceMagnifier = new Magnifier();
+      }
+      return instanceMagnifier;
+    },
+    getMainMap: function () {
+      if (!instanceMainMap) {
+        instanceMainMap = new MainMap();
+      }
+      return instanceMainMap;
+    },
+  };
+}) ();
+
 Magnifier.prototype.startMove =
   function (event) {
     // for IE
     if (!event)
       event = window.event;
 
-    //var magnifierDiv = document.getElementById("magnifier");
     var magnifierDiv = this.div;
     this.dragStartLeft = event.clientX;
     this.dragStartTop  = event.clientY;
@@ -79,6 +95,7 @@ Magnifier.prototype.processMove =
       if (shiftedTop > maxY) shiftedTop = maxY;
       magnifierDiv.style.top = shiftedTop + "px";
 
+      var mainMap = Singleton.getMainMap();
       mainMap.setViewPort();
     }
 
@@ -103,7 +120,7 @@ Magnifier.prototype.setSize =
     var magnifierHeight
       = Math.round([% view_port_height * mini_map_height %] / innerDivHeight) - 2;
       /* We subtract 2 because the borders are 1 pixel each */
-    var magnifierDiv = document.getElementById("magnifier");
+    var magnifierDiv = this.div;
     magnifierDiv.style.width  = magnifierWidth  + "px";
     magnifierDiv.style.height = magnifierHeight + "px";
   }
@@ -206,6 +223,7 @@ MainMap.prototype.processMove =
       innerDiv.style.left = shiftedLeft + "px";
 
       this.checkTiles();
+      var magnifier = Singleton.getMagnifier();
       magnifier.setPosition();
     }
 
@@ -320,6 +338,7 @@ MainMap.prototype.setInnerDivSize =
     var innerDiv = this.innerDiv;
     innerDiv.style.width  = width  + "px";
     innerDiv.style.height = height + "px";
+    var magnifier = Singleton.getMagnifier();
     magnifier.setPosition();
     magnifier.setSize (width, height);
 
