@@ -94,12 +94,6 @@ has 'scales' => (
   default => sub { [] },
 );
 
-has 'html_template' => (
-  is      => 'ro',
-  isa     => 'Str',
-  default => 'map_index.html.tt',
-);
-
 sub _build_dest_dir {
   my ($self) = @_;
   return $self->has_dest_dir() ? $self->dest_dir : '.';
@@ -351,8 +345,14 @@ sub generate_html {
   my ($mini_map_width, $mini_map_height) = dim($info);
 
   my $tt = Template->new (INCLUDE_PATH => $self->descartes_dir);
-  $tt->process(
-        $self->html_template,
+  my %template_to_output = (
+    'map_index.html.tt' => 'index.html',
+    'slippy_map.js.tt'  => 'slippy_map.js',
+  );
+
+  while (my ($template_file, $output_file) = each %template_to_output) {
+    $tt->process(
+        $template_file,
         {
           file_base        => $self->refined_name,
           tiles_subdir     => $config->{tiles_subdir},
@@ -364,8 +364,9 @@ sub generate_html {
           mini_map_width   => $mini_map_width,
           mini_map_height  => $mini_map_height,
         },
-        "$base_dir/index.html"
-  ) || die $tt->error(), "\n";
+        "$base_dir/$output_file",
+    ) || die "$template_file: " . $tt->error() . "\n";
+  }
 }
 
 sub zip_files {
