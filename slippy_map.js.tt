@@ -12,6 +12,16 @@ function mapInit() {
     = function (event) { return magnifier.stopMove(event) };
   miniMapInner.ondragstart = function() { return false; } // for IE
 
+  var miniMap = document.getElementById("miniMap");
+  miniMap.onwheel = function (event) {
+    if (event.deltaY < 0) {
+      mainMap.incrZoom();
+    }
+    else {
+      mainMap.decrZoom();
+    }
+  };
+
   var buttonIncrZoom = document.getElementById("incrZoom");
   buttonIncrZoom.onclick = function() { mainMap.incrZoom() };
 
@@ -166,6 +176,14 @@ function MainMap () {
   outerDiv.onmouseup
     = function(event) { return this1.stopMove(event) };
   outerDiv.ondragstart = function() { return false; }  // for IE
+  outerDiv.onwheel = function (event) {
+    if (event.deltaY < 0) {
+      this1.incrZoom();
+    }
+    else {
+      this1.decrZoom();
+    }
+  }
 
   this.zoom = 0;
   this.zoomDim = [
