@@ -194,8 +194,8 @@ function MainMap () {
   this.setInnerDivSize (zoomElt.width, zoomElt.height, zoomElt.scale);
   this.checkTiles();
 
-  document.getElementById("incrZoom").onclick = function() { mainMap.incrZoom() };
-  document.getElementById("decrZoom").onclick = function() { mainMap.decrZoom() };
+  document.getElementById("incrZoom").onclick = function() { this1.incrZoom() };
+  document.getElementById("decrZoom").onclick = function() { this1.decrZoom() };
 }
 
 MainMap.prototype.startMove =
