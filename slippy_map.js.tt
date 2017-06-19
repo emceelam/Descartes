@@ -21,12 +21,6 @@ function mapInit() {
       mainMap.decrZoom();
     }
   };
-
-  var buttonIncrZoom = document.getElementById("incrZoom");
-  buttonIncrZoom.onclick = function() { mainMap.incrZoom() };
-
-  var buttonDecrZoom = document.getElementById("decrZoom");
-  buttonDecrZoom.onclick = function() { mainMap.decrZoom() };
 }
 
 function Magnifier () {
@@ -199,6 +193,9 @@ function MainMap () {
   var zoomElt = this.zoomDim[this.zoom];
   this.setInnerDivSize (zoomElt.width, zoomElt.height, zoomElt.scale);
   this.checkTiles();
+
+  document.getElementById("incrZoom").onclick = function() { mainMap.incrZoom() };
+  document.getElementById("decrZoom").onclick = function() { mainMap.decrZoom() };
 }
 
 MainMap.prototype.startMove =
