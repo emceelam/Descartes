@@ -7,6 +7,7 @@ use namespace::autoclean;
 use Imager;
 use Image::Info qw(image_info dim);
 use Template;
+use Template::Stash::AutoEscape;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
 use File::Copy qw(move copy);
@@ -19,8 +20,8 @@ use Cwd qw(cwd abs_path);
 use Carp qw(croak);
 use Log::Any ();
 use Data::Dumper;
-use Descartes::ConfigSingleton;
-use Descartes::Lib qw(refine_file_name);
+
+use Descartes::Lib qw(refine_file_name get_config);
 
 has 'source_file' => (
   is       => 'ro',
@@ -108,7 +109,7 @@ sub _build_descartes_dir {
 }
 
 sub _build_config {
-  return Descartes::ConfigSingleton->new()->config();
+  return get_config();
 }
 
 sub _build_refined_name {
@@ -344,7 +345,10 @@ sub generate_html {
     if $info->{error};
   my ($mini_map_width, $mini_map_height) = dim($info);
 
-  my $tt = Template->new (INCLUDE_PATH => $self->descartes_dir);
+  my $tt = Template->new (
+    INCLUDE_PATH => $self->descartes_dir,
+    STASH => Template::Stash::AutoEscape->new(),
+  );
   my %template_to_output = (
     'slippy_map.html.tt' => 'index.html',
     'slippy_map.js.tt'   => 'slippy_map.js',

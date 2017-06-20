@@ -23,8 +23,7 @@ use Log::Any::Adapter ('Stdout');
 use Data::Dumper;
 
 use Descartes::MapMaker;
-use Descartes::ConfigSingleton;
-use Descartes::Lib qw(refine_file_name);
+use Descartes::Lib qw(refine_file_name get_config);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -55,7 +54,7 @@ GetOptions (
 
 $gen_parms{f_quiet} = $f_quiet if $f_quiet;
 
-my $config = Descartes::ConfigSingleton->new()->config();
+my $config = get_config();
 my $mini_map_max_width  = $config->{mini_map_max_width};
 my $mini_map_max_height = $config->{mini_map_max_height};
 my $mini_map_name       = $config->{mini_map_name};
