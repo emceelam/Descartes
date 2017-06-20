@@ -8,8 +8,9 @@ function mapInit() {
     = function (event) { return magnifier.startMove(event) };
   miniMapInner.onmousemove
     = function (event) { return magnifier.processMove(event) };
-  miniMapInner.onmouseup
+  var stopMove
     = function (event) { return magnifier.stopMove(event) };
+  miniMapInner.onmouseup = stopMove;
   miniMapInner.ondragstart = function() { return false; } // for IE
 
   var miniMap = document.getElementById("miniMap");
@@ -21,6 +22,7 @@ function mapInit() {
       mainMap.decrZoom();
     }
   };
+  miniMap.onmouseleave = stopMove;
 }
 
 function Magnifier () {
@@ -114,6 +116,7 @@ Magnifier.prototype.stopMove =
   function (event) {
     this.div.style.cursor = "";
     this.f_dragging = false;
+    return false;
   }
 
 Magnifier.prototype.setSize =
@@ -167,8 +170,10 @@ function MainMap () {
     = function(event) { return this1.startMove(event) };
   outerDiv.onmousemove
     = function(event) { return this1.processMove(event) };
-  outerDiv.onmouseup
+  var stopMove
     = function(event) { return this1.stopMove(event) };
+  outerDiv.onmouseup    = stopMove;
+  outerDiv.onmouseleave = stopMove;
   outerDiv.ondragstart = function() { return false; }  // for IE
   outerDiv.onwheel = function (event) {
     if (event.deltaY < 0) {
@@ -319,6 +324,7 @@ MainMap.prototype.stopMove =
   function (event) {
     this.innerDiv.style.cursor = "";
     this.f_dragging = false;
+    return false;
   }
 
 // movement in the magnifier moves main map's view port
