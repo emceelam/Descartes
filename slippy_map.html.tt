@@ -57,7 +57,8 @@
         top:0px;
         z-index:1;
         background-color:transparent;
-        border: solid [% magnifier_color %] 1px;
+        border: dotted [% magnifier_color %] 1px;
+        outline: black dotted 1px;
       }
       #miniMap {
         position: relative;
