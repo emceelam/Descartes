@@ -10,7 +10,7 @@ use Template;
 use Template::Stash::AutoEscape;
 use Archive::Zip qw( :ERROR_CODES :CONSTANTS );
 use File::Find qw(find);
-use File::Copy qw(move copy);
+use File::Copy qw(copy);
 use File::Path qw(mkpath rmtree);
 use File::Touch qw(touch);
 use File::Basename qw(dirname);
@@ -181,18 +181,15 @@ sub pdf_to_png {
   # at scale 100%, monitor resolution is 72dpi
   foreach $scale (@unrendered_scales) {
     my $dpi = round($scale * 72);
+    my $command
+      = "pdftoppm -png -r $dpi -cropbox $pdf_name $rendered_dir/$base_name";
+    $log->info($command);
+    system ($command);
+
+    my $page1_name  = "$rendered_dir/$base_name-1.png";
     my $output_name = "$rendered_dir/$base_name.png";
-
-    #  system ("nice gs -q -dSAFER -dBATCH -dNOPAUSE " .
-    #            "-sDEVICE=png16m -dUseCropBox -dMaxBitmap=300000000 " .
-    #            "-dFirstPage=1 -dLastPage=1 -r$dpi " .
-    #            "-dTextAlphaBits=4 -dGraphicsAlphaBits=4 -dDOINTERPOLATE " .
-    #            "-sOutputFile=$output_name $pdf_name");
-
-    $log->info("gm convert -density $dpi $pdf_name $output_name");
-    system ("gm convert -density $dpi $pdf_name $output_name");
-    if (-e "$output_name.0") {
-      move ("$output_name.0", $output_name);
+    if (-e $page1_name) {
+      rename $page1_name, $output_name;
     }
 
     $info = image_info ($output_name);
