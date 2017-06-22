@@ -96,46 +96,46 @@ if (@problem_files) {
 # Take one directory full of graphic files. Call generate on each graphic file.
 # Voila a gallery of slippy maps.
 sub make_gallery {
-  my ($album_dir, @gen_parms) = @_;
+  my ($gallery_dir, @gen_parms) = @_;
 
-  if (! opendir DIR, $album_dir)
+  if (! opendir DIR, $gallery_dir)
   {
     push @problem_files, {
-      file => $album_dir,
-      error => "Could not open directory $album_dir\n",
+      file => $gallery_dir,
+      error => "Could not open directory $gallery_dir\n",
     };
     return;
   }
   my @all_files = readdir DIR;
   closedir DIR;
-  my $album_file = firstval { $_ eq 'album.hiff' } @all_files;
-  my $album;
-  if (!$album_file) {
-    $album = create_default_hiff ($album_dir, \@all_files);
+  my $gallery_file = firstval { $_ eq 'gallery.hiff' } @all_files;
+  my $gallery;
+  if (!$gallery_file) {
+    $gallery = create_default_hiff ($gallery_dir, \@all_files);
   }
   else {
-    $album = XMLin("$album_dir/$album_file",
+    $gallery = XMLin("$gallery_dir/$gallery_file",
                     KeyAttr => [],
                     ForceArray => ['item'],
                     #Cache => 'storable',
     );
-    die "Could not XML process $album_dir/$album_file"
-      if !$album;
+    die "Could not XML process $gallery_dir/$gallery_file"
+      if !$gallery;
   }
 
   my @graphic_files = grep { m/jpeg|jpg|gif|tif|png|pdf$/i } @all_files;
-  my $items = $album->{item};
-  my %album_items;
-  @album_items{ map { $_->{dir} } @$items } = @$items;
+  my $items = $gallery->{item};
+  my %gallery_items;
+  @gallery_items{ map { $_->{dir} } @$items } = @$items;
   my @thumbs;
   foreach my $graphic_file (@graphic_files) {
-    $log->info("Rendering $album_dir/$graphic_file");
+    $log->info("Rendering $gallery_dir/$graphic_file");
     my $map_maker = Descartes::MapMaker->new(
-      source_file => "$album_dir/$graphic_file",
-      dest_dir    => $album_dir,
+      source_file => "$gallery_dir/$graphic_file",
+      dest_dir    => $gallery_dir,
     );
     my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
-    my $generated_dir = "$album_dir/$image_dir";
+    my $generated_dir = "$gallery_dir/$image_dir";
     my $url_dir = $url_root ? "$url_root/$image_dir" : $image_dir;
 
     my $mini_map_file = "$generated_dir/rendered/$mini_map_name";
@@ -145,12 +145,12 @@ sub make_gallery {
     my $info = image_info ($mini_map_file);
     if (my $error = $info->{error}) {
        push @problem_files, {
-         file => "$album_dir/$graphic_file",
+         file => "$gallery_dir/$graphic_file",
          error => "Can't parse image info: $error",
        };
        next;
     }
-    push @rendered_files, "$album_dir/$graphic_file";
+    push @rendered_files, "$gallery_dir/$graphic_file";
     my($mini_map_width, $mini_map_height) = dim($info);
 
     push @thumbs, {
@@ -160,11 +160,11 @@ sub make_gallery {
       height  => $mini_map_height,
     };
 
-    # augment the album items with extra meta data
-    my $item = $album_items{$image_dir};
+    # augment the gallery items with extra meta data
+    my $item = $gallery_items{$image_dir};
     $item->{thumb} = {
-      src => "$url_dir/rendered/$mini_map_name",
-      width => $mini_map_width,
+      src    => "$url_dir/rendered/$mini_map_name",
+      width  => $mini_map_width,
       height => $mini_map_height,
     };
     $item->{multi_res}{file} = "$url_dir/index.html";
@@ -177,10 +177,10 @@ sub make_gallery {
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
 
-  my $album_path =  abs_path ($album_dir);
+  my $gallery_path =  abs_path ($gallery_dir);
   my $tt = Template->new ( {
-    INCLUDE_PATH => $album_path,
-    OUTPUT_PATH  => $album_path,
+    INCLUDE_PATH => $gallery_path,
+    OUTPUT_PATH  => $gallery_path,
     STASH => Template::Stash::AutoEscape->new(),
   } );
   die ($Template::ERROR, "\n") if !$tt;
@@ -188,7 +188,7 @@ sub make_gallery {
   my @parts = splitpath (abs_path($0));
   my $descartes_dir = $parts[1];
   $descartes_dir =~ s{/$}{};
-  my $target = "$album_path/gallery.html.tt";
+  my $target = "$gallery_path/gallery.html.tt";
   my $source = "$descartes_dir/gallery.html.tt";
 
   if (!-e $target) {
@@ -203,11 +203,11 @@ sub make_gallery {
           thumbs => \@thumbs,
           mini_map_max_width  => $mini_map_max_width,
           mini_map_max_height => $mini_map_max_height,
-          album => $album,
+          gallery => $gallery,
         },
         "index.html"
   );
-  die ($tt->error() . "\n  Could not create $album_dir/index.html.\n")
+  die ($tt->error() . "\n  Could not create $gallery_dir/index.html.\n")
     if !$tt_result;
 }
 
@@ -257,12 +257,12 @@ sub process_graphic_file {
 }
 
 sub create_default_hiff {
-  my ($album_dir, $all_files) = @_;
+  my ($gallery_dir, $all_files) = @_;
 
-  my $album = {};
+  my $gallery = {};
   my @items;
   for my $file_name (@$all_files) {
-    next if -d "$album_dir/$file_name";
+    next if -d "$gallery_dir/$file_name";
 
     if (image_type($file_name)->{error}) {
       my $refined_name = refine_file_name ($file_name);
@@ -273,10 +273,10 @@ sub create_default_hiff {
       };
     }
   }
-  $album->{item} = \@items;
-  open my $fh, '>', "$album_dir/album.hiff";
-  my $return_val = XMLout ($album,
-                        RootName => 'album',
+  $gallery->{item} = \@items;
+  open my $fh, '>', "$gallery_dir/gallery.hiff";
+  my $return_val = XMLout ($gallery,
+                        RootName => 'gallery',
                         KeyAttr => {'item' => 'dir' },
                         NoAttr => 1,
                         AttrIndent => 1,
@@ -288,7 +288,7 @@ sub create_default_hiff {
   if (!$return_val) {
     die ("XMLout() fails");
   }
-  return $album;
+  return $gallery;
 }
 
 sub get_all_res {
@@ -351,14 +351,14 @@ Please, no spaces.
 
 =item --url_root (optional)
 
-Specify an absolute url path of your album
+Specify an absolute url path of your gallery
 
-  --url_root=http://localhost/album_path
+  --url_root=http://localhost/gallery_path
 
 Alternatively, specify the absolute path only, allowing the browser
 to fill the http scheme and domain name.
 
-  --url_root=/album_path
+  --url_root=/gallery_path
 
 =end comment
 

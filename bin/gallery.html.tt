@@ -93,7 +93,7 @@
 
 [% BLOCK hiff_gallery %]
     <ul id="gallery">
-      [%- FOREACH item IN album.item %]
+      [%- FOREACH item IN gallery.item %]
         <li>
           <div class="thumb_map_name">
             [% item.name %]
