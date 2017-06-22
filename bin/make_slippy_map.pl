@@ -311,13 +311,9 @@ generate a slippy map, also known
 as google style map. If given a directory of graphics files, the generator will
 generate a web page gallery of slippy maps.
 
-You can see some examples at
+You can see some examples at L<http://sjsutech.com/>
 
-  http://sjsutech.com/
-
-Perl module is available at
-
-  https://stratopan.com/emceelam/descartes/master
+Perl module is available at L<https://stratopan.com/emceelam/descartes/master>
 
 Warning: This software is Alpha. This software works best on the
 author's Linux laptop, and has no testing on anyone else's machine.
