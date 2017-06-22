@@ -312,16 +312,33 @@ __END__
 
 =head1 SYNOPSIS
 
-./make_ajax.pl filename1.pdf filename2.pdf etc.
+make_slippy_map.pl [FILE]...
 
-=head1 DESCRIPTION
+make_slippy_map.pl directory_of_graphic_files
 
-This program will take a graphics file (pdf, png, gif or jpg) and render the files
-necessary to support a google style map.
+=head2 DESCRIPTION
 
-=head1 ARGUMENTS
+This program will take a hi-res graphics file (pdf, png, gif or jpg) and
+generate a slippy map, also known
+as google style map. If given a directory of graphics files, the generator will
+generate a web page gallery of slippy maps.
 
-=head2 --scale
+You can see some examples at
+
+  http://sjsutech.com/
+
+Perl module is available at
+
+  https://stratopan.com/emceelam/descartes/master
+
+Warning: This software is Alpha. This software works best on the
+author's Linux laptop, and has no testing on anyone else's machine.
+
+=head2 ARGUMENTS
+
+=over
+
+=item --scale
 
 Sets the scale factors for the renders. For example, 75%, 100%, 125% and 150% is
 represented as 
@@ -330,7 +347,9 @@ represented as
 
 Please, no spaces.
 
-=head2 --url_root (optional)
+=begin comment
+
+=item --url_root (optional)
 
 Specify an absolute url path of your album
 
@@ -341,14 +360,21 @@ to fill the http scheme and domain name.
 
   --url_root=/album_path
 
+=end comment
 
-=head2 --help
+=item --help
 
 Print this help section
 
-=head2 --quiet value
+=item --quiet value
 
 Currently unimplemented
+
+=back
+
+=head2 BUGS
+
+may fail on raster graphics of less than 2000x2000
 
 =cut
 
