@@ -2,16 +2,17 @@
 
 use warnings;
 use strict;
-use File::Basename qw(dirname);
+use File::Basename qw(dirname basename);
 use File::Copy qw(copy);
 use File::Path qw(rmtree);
 use Test::More tests => 23;
 use List::MoreUtils qw(any);
 
 my $t_dir = dirname(__FILE__);
+my $basename = basename($0);
 #my $bin_dir = "$t_dir/../bin";
-my $bin_dir = "../../";
-my $gallery_dir = "/tmp/$0.gallery_test";
+my $bin_dir = "$t_dir/../..";
+my $gallery_dir = "/tmp/$basename.gallery_test";
 mkdir $gallery_dir;
 copy "$t_dir/tandem-bike-riders.pdf", $gallery_dir;
 copy "$t_dir/teaparty.pdf", $gallery_dir;
@@ -47,7 +48,7 @@ foreach my $graphic_file (@graphic_files)
       my ($b_scale) = $b =~ /scale(\d+)/;
       $a_scale <=> $b_scale
       } @scaled_images;
-  diag map {"$_\n"} @scaled_images;
+  note (map {"$_\n"} @scaled_images);
   ok (@scaled_images, "At least one render");
 
   # Scales
@@ -56,7 +57,7 @@ foreach my $graphic_file (@graphic_files)
       "opened $scale_dir");
   my @tiles = readdir ($scales_dir_handle);
   ok (closedir ($scales_dir_handle), "closed $scale_dir");
-  diag scalar(@tiles) . " tiles found\n";
+  note (scalar(@tiles) . " tiles found\n");
   ok ( (any { m/^x0y0\./ } @tiles), "x0y0 tile exist" );
 }
 
