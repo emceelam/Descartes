@@ -1,26 +1,20 @@
-README.TXT
+Generate a slippy map (aka Google Style map) from high resolution images or pdf.
 
-Create Google Style maps from high resolution images or pdf.
-
-Your first step is to get a pdf file, like say Stanford's map.
-  http://www-facilities.stanford.edu/maps/download/VisitorMap.pdf
+For your first try at generating a slippy map, use a pdf.
 
 We can also render jpeg, png, and gif, but these don't look very good unless
 the image is at least 2000 x 2000 resolution.
 
 To render a pdf
-  ./make_ajax.pl filename.pdf
+
+  make_slippy_map.pl filename.pdf
+
 This will create a subdirectory. Within is an index.html that
 can be displayed in a web browser
 
-To render a directory full of pdf files, a la gallery style
-  ./make_ajax.pl pdf_directory
+To render a directory full of graphics files
 
-To read up on other options
-  ./make_ajax.pl
+  make_slippy_map.pl graphics_directory
 
-To run the gallery test case, fill the gallery_test subdirectory with 
-pdf files. Then
-
-  perl gallery_test.t
-
+This will render all graphics within, and produce a gallery web page
+that organizes said graphics.
