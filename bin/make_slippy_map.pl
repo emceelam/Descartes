@@ -94,7 +94,7 @@ if (@problem_files) {
 
 # make_gallery
 # Take one directory full of graphic files. Call generate on each graphic file.
-# Voila a gallery of google style maps.
+# Voila a gallery of slippy maps.
 sub make_gallery {
   my ($album_dir, @gen_parms) = @_;
 
@@ -188,8 +188,8 @@ sub make_gallery {
   my @parts = splitpath (abs_path($0));
   my $descartes_dir = $parts[1];
   $descartes_dir =~ s{/$}{};
-  my $target = "$album_path/album_index.html.tt";
-  my $source = "$descartes_dir/album_index.html.tt";
+  my $target = "$album_path/gallery.html.tt";
+  my $source = "$descartes_dir/gallery.html.tt";
 
   if (!-e $target) {
     $log->info("Copying $source to $target");
@@ -198,7 +198,7 @@ sub make_gallery {
   }
   
   my $tt_result = $tt->process(
-        'album_index.html.tt',
+        'gallery.html.tt',
         {
           thumbs => \@thumbs,
           mini_map_max_width  => $mini_map_max_width,
