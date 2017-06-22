@@ -10,8 +10,7 @@ use Image::Info qw(image_type image_info dim);
 use Template;
 use Template::Stash::AutoEscape;
 use Cwd qw(cwd abs_path);
-use File::Copy qw(cp);
-use File::Spec::Functions qw(splitpath);
+use File::Basename qw(dirname);
 use Text::Wrap qw(wrap);
 use XML::Simple qw(XMLin XMLout);
 use List::MoreUtils qw(firstval);
@@ -178,27 +177,16 @@ sub make_gallery {
   }
 
   my $gallery_path =  abs_path ($gallery_dir);
+  my $descartes_dir = dirname(__FILE__);
   my $tt = Template->new ( {
-    INCLUDE_PATH => $gallery_path,
+    INCLUDE_PATH => $descartes_dir,
     OUTPUT_PATH  => $gallery_path,
-    STASH => Template::Stash::AutoEscape->new(),
+    STASH        => Template::Stash::AutoEscape->new(),
   } );
   die ($Template::ERROR, "\n") if !$tt;
 
-  my @parts = splitpath (abs_path($0));
-  my $descartes_dir = $parts[1];
-  $descartes_dir =~ s{/$}{};
-  my $target = "$gallery_path/gallery.html.tt";
-  my $source = "$descartes_dir/gallery.html.tt";
-
-  if (!-e $target) {
-    $log->info("Copying $source to $target");
-    cp ($source, $target)
-      || die ("Failed to copy $source to $target\n");
-  }
-  
   my $tt_result = $tt->process(
-        'gallery.html.tt',
+        "gallery.html.tt",
         {
           thumbs => \@thumbs,
           mini_map_max_width  => $mini_map_max_width,
