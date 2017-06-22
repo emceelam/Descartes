@@ -5,7 +5,7 @@ use strict;
 use File::Basename qw(dirname basename);
 use File::Copy qw(copy);
 use File::Path qw(rmtree);
-use Test::More tests => 26;
+use Test::More tests => 27;
 use List::MoreUtils qw(any);
 
 my $t_dir       = dirname(__FILE__);
@@ -70,7 +70,6 @@ ok (-f "$gallery_dir/index.html",
   "$gallery_dir/index.html exist");
 ok (-M "$gallery_dir/index.html" < 0,
   "$gallery_dir/index.html generated recently");
-#ok (-e "$gallery_dir/catalog.dat",
-#  "$graphic_file/catalog.dat exists");
 
 rmtree ($gallery_dir);
+ok (!-e $gallery_dir, "remove at end of test, $gallery_dir");
