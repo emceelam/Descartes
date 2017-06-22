@@ -5,17 +5,22 @@ use strict;
 use File::Basename qw(dirname basename);
 use File::Copy qw(copy);
 use File::Path qw(rmtree);
-use Test::More tests => 23;
+use Test::More tests => 26;
 use List::MoreUtils qw(any);
 
-my $t_dir = dirname(__FILE__);
-my $basename = basename($0);
-#my $bin_dir = "$t_dir/../bin";
-my $bin_dir = "$t_dir/../..";
+my $t_dir       = dirname(__FILE__);
+my $bin_dir     = "$t_dir/../bin";
+my $testimg_dir = "$t_dir/../testimg";
+my $basename    = basename($0);
 my $gallery_dir = "/tmp/$basename.gallery_test";
 mkdir $gallery_dir;
-copy "$t_dir/tandem-bike-riders.pdf", $gallery_dir;
-copy "$t_dir/teaparty.pdf", $gallery_dir;
+ok (-d $gallery_dir, "mkdir $gallery_dir");
+foreach my $test_img (qw(tandem-bike-riders.pdf teaparty.pdf)) {
+  my $source = "$testimg_dir/$test_img";
+  my $dest = "$gallery_dir/$test_img";
+  copy ($source, $dest);
+  ok (-f $dest, $dest);
+}
 system "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
 
 ok (opendir(my $dir_handle, $gallery_dir), "open $gallery_dir directory");
