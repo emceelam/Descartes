@@ -1,18 +1,28 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 
+use warnings;
 use strict;
-use Test::More qw (no_plan);
+use File::Basename qw(dirname);
+use File::Copy qw(copy);
+use File::Path qw(rmtree);
+use Test::More tests => 23;
 use List::MoreUtils qw(any);
 
-system q { perl make_ajax_map.pl --scale="1" gallery_test };
+my $t_dir = dirname(__FILE__);
+#my $bin_dir = "$t_dir/../bin";
+my $bin_dir = "../../";
+my $gallery_dir = "/tmp/$0.gallery_test";
+mkdir $gallery_dir;
+copy "$t_dir/tandem-bike-riders.pdf", $gallery_dir;
+copy "$t_dir/teaparty.pdf", $gallery_dir;
+system "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
 
-my $gallery_dir = "gallery_test";
 ok (opendir(my $dir_handle, $gallery_dir), "open $gallery_dir directory");
 my @all_files = readdir($dir_handle);
 ok (closedir($dir_handle), "closed $gallery_dir directory");;
 
 my @graphic_files = grep { m/pdf|png|gif|jpg/i } @all_files;
-ok (@graphic_files, "QA tester needs graphic files in $gallery_dir");
+ok (@graphic_files, "graphic files in $gallery_dir");
 
 foreach my $graphic_file (@graphic_files)
 {
@@ -56,3 +66,5 @@ ok (-M "$gallery_dir/index.html" < 0,
   "$gallery_dir/index.html generated recently");
 #ok (-e "$gallery_dir/catalog.dat",
 #  "$graphic_file/catalog.dat exists");
+
+rmtree ($gallery_dir);
