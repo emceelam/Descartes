@@ -1,6 +1,3 @@
-[%
-  magnifier_color = "yellow";
--%]
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -19,7 +16,7 @@
     <style type="text/css">
       #outerDiv {
         width: [% view_port_width %]px; height: [% view_port_height %]px;
-        border: 1px solid black; position: relative;
+        border: 1px solid #888888; position: relative;
         overflow: hidden;
       }
       #innerDiv {
@@ -29,9 +26,9 @@
         z-index: 0;
       }
       #resolutionInfo {
-        border-left: 1px solid black;
-        border-right: 1px solid black;
-        border-bottom: 1px solid black;
+        border-left: 1px solid #888888;
+        border-right: 1px solid #888888;
+        border-bottom: 1px solid #888888;
         padding: 2px 2px 0 0;
         width: [% view_port_width %]px;
         background:#00cdcd;
@@ -46,7 +43,8 @@
       .button-map {
         opacity: 0.55;
         color: #333;
-        background-color: #fff
+        background-color: #fff;
+        border-color: #d6e7ee;
       }
       .button-map:hover, .button-map:active:focus, .button-map:focus, .button-map:active {
         opacity: 0.75;
@@ -57,7 +55,7 @@
         top:0px;
         z-index:1;
         background-color:transparent;
-        border: dotted [% magnifier_color %] 1px;
+        border: 1px dotted yellow;
         outline: black dotted 1px;
       }
       #miniMap {
@@ -67,7 +65,7 @@
         margin: 50px 0 0 0;
         padding: 3px;
         width:250px;
-        border:black solid 1px;
+        border: 1px solid #888888;
         background-color:#d6e7ee;
         font-size: 12px;
       }
