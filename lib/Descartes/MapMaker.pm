@@ -95,6 +95,13 @@ has 'scales' => (
   default => sub { [] },
 );
 
+has 'previous_scale_renders' => (
+  is      => 'rw',
+  isa     => 'ArrayRef',
+  lazy    => 1,
+  builder => '_build_previous_scale_renders',
+);
+
 sub _build_dest_dir {
   my ($self) = @_;
   return $self->has_dest_dir() ? $self->dest_dir : '.';
@@ -172,7 +179,7 @@ sub pdf_to_png {
   my $scale;
   my %seen;
 
-  my $render_and_files = get_previous_scale_renders($pdf_name, $rendered_dir);
+  my $render_and_files = $self->previous_scale_renders;
   @renders = map { $_->[0] } @$render_and_files;
   @seen{@renders} = ();
   my @unrendered_scales = grep { !exists $seen{$_} } @$scales;
@@ -419,8 +426,7 @@ sub scale_raster_image {
   my @scale_and_files;
   my $dest_file_name;
 
-  my $render_and_files
-        = get_previous_scale_renders ($source_file, $rendered_dir);
+  my $render_and_files = $self->previous_scale_renders;
   my %seen;
   my @renders = map {$_->[0]} @$render_and_files;
   @seen{@renders} = ();
@@ -489,11 +495,11 @@ sub generate {
   else {
     $scale_and_files = $self->scale_raster_image ();
   }
-  @file_names = map { $_->[1] } @$scale_and_files;
   foreach my $row (@$scale_and_files) {
     my ($scale, $file_name) = @$row;
     $self->tile_image ($scale, $file_name);
   }
+  @file_names = map { $_->[1] } @$scale_and_files;
   my $source = $file_names[-1];
     # Create scaled down images based on the last file. Last is typically largest.
   my $mini_map_name       = $config->{mini_map_name};
@@ -539,11 +545,13 @@ sub is_up_to_date {
   return 0;
 }
 
-sub get_previous_scale_renders {
-  my ($source, $rendered_dir) = @_;
+sub _build_previous_scale_renders {
+  my ($self) = @_;
   my @render_and_files;
 
-  opendir (my $dir_handle, $rendered_dir) 
+  my $source       = $self->source_file;
+  my $rendered_dir = $self->rendered_dir;
+  opendir (my $dir_handle, $rendered_dir)
     || croak "Could not open $rendered_dir";
   @render_and_files
       = map  { my ($scale) = /scale(\d+)[.][a-z]{3}$/;
