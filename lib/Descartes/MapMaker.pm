@@ -563,24 +563,6 @@ sub _build_previous_scale_renders {
   return \@render_and_files;
 }
 
-# Currently not used, but will be
-sub get_scale_render {
-  my ($source, $rendered_dir) = @_;
-
-  opendir (my $dir_handle, $rendered_dir)
-    || croak "Could not open $rendered_dir";
-  my %scale_render
-      = map  { my ($scale) = /scale(\d+)[.]png$/;
-               $scale/100 , $_ }
-        grep { is_up_to_date (source=> $source, target=> "$rendered_dir/$_") }
-        grep { /scale\d+[.]png$/ }
-        readdir $dir_handle;
-  closedir ($dir_handle);
-
-  return \%scale_render;
-}
-
-
 __PACKAGE__->meta->make_immutable;
 
 
