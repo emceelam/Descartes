@@ -5,21 +5,23 @@ use strict;
 use File::Basename qw(dirname basename);
 use File::Copy qw(copy);
 use File::Path qw(rmtree);
-use Test::More tests => 27;
 use List::MoreUtils qw(any);
+use Test::More tests => 27;
 
 my $t_dir       = dirname(__FILE__);
 my $bin_dir     = "$t_dir/../bin";
 my $testimg_dir = "$t_dir/../testimg";
 my $basename    = basename($0);
-my $gallery_dir = "/tmp/$basename.gallery_test";
+my $gallery_dir = "/tmp/$basename";
+ok (!-d $gallery_dir, "Clean slate: no pre-existing $gallery_dir");
 mkdir $gallery_dir;
 ok (-d $gallery_dir, "mkdir $gallery_dir");
 foreach my $test_img (qw(tandem-bike-riders.pdf teaparty.pdf)) {
   my $source = "$testimg_dir/$test_img";
   my $dest = "$gallery_dir/$test_img";
+  ok (-f $source, "source: $source");
   copy ($source, $dest);
-  ok (-f $dest, $dest);
+  ok (-f $dest, "dest: $dest");
 }
 system "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
 
@@ -37,8 +39,6 @@ foreach my $graphic_file (@graphic_files)
   ok (-d "$gallery_dir/$graphic_file", "$graphic_file directory exist");
 
   # Renders
-  ok (-M "$gallery_dir/$graphic_file" < 0, 
-    "Built $graphic_file directory during this script's run");
   ok (opendir (my $rendered_dir_handle, "$gallery_dir/$graphic_file/rendered"),
     "opened $gallery_dir/$graphic_file/rendered");
   my @renders = readdir ($rendered_dir_handle);
@@ -68,8 +68,7 @@ foreach my $graphic_file (@graphic_files)
 
 ok (-f "$gallery_dir/index.html",
   "$gallery_dir/index.html exist");
-ok (-M "$gallery_dir/index.html" < 0,
-  "$gallery_dir/index.html generated recently");
 
 rmtree ($gallery_dir);
 ok (!-e $gallery_dir, "remove at end of test, $gallery_dir");
+
