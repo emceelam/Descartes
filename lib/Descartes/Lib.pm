@@ -11,6 +11,7 @@ require Exporter;
 use warnings;
 use strict;
 use feature qw(state);
+use autodie qw(opendir closedir);
 use JSON;
 use Cwd qw(abs_path);
 use File::Slurp qw(read_file);
@@ -64,15 +65,19 @@ sub get_share_dir {
 
   if (!$share_dir) {
     $share_dir = abs_path( dirname(__FILE__) . "/../../share" );
-    opendir my ($dir_handle), $share_dir;
-    my @files = grep { m{[.]tt$} } readdir $dir_handle;
-    closedir $dir_handle;
-    return $share_dir if @files;
+
+    my @files;
+    eval {
+      opendir my ($dir_handle), $share_dir;
+      @files = grep { m{[.]tt$} } readdir $dir_handle;
+      closedir $dir_handle;
+    };
 
     if (!@files) {
       $share_dir = File::ShareDir::dist_dir('Descartes');
     }
   }
+
   return $share_dir;
 }
 
