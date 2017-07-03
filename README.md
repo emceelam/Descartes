@@ -35,7 +35,7 @@ author's Linux laptop, and has no testing on anyone else's machine.
 
 - --quiet value
 
-    Currently unimplemented
+    No output to stdout
 
 ## BUGS
 
