@@ -8,6 +8,8 @@ require Exporter;
   get_share_dir
 );
 
+use warnings;
+use strict;
 use feature qw(state);
 use JSON;
 use Cwd qw(abs_path);
@@ -58,15 +60,20 @@ sub get_config {
 }
 
 sub get_share_dir {
-  my @files = qw(gallery.html.tt slippy_map.html.tt slippy_map.js.tt);
-  my $shared_dir = abs_path( dirname(__FILE__) . "/../../share" );
-  opendir my ($dir_handle), $shared_dir;
-  my @files = grep { m{[.]tt$} } readdir $dir_handle;
-  closedir $dir_handle;
-  return $shared_dir if @files;
+  state $share_dir;
 
-  $shared_dir = File::ShareDir::dist_dir('Descartes');
-  return $shared_dir;
+  if (!$share_dir) {
+    $share_dir = abs_path( dirname(__FILE__) . "/../../share" );
+    opendir my ($dir_handle), $share_dir;
+    my @files = grep { m{[.]tt$} } readdir $dir_handle;
+    closedir $dir_handle;
+    return $share_dir if @files;
+
+    if (!@files) {
+      $share_dir = File::ShareDir::dist_dir('Descartes');
+    }
+  }
+  return $share_dir;
 }
 
 1;
