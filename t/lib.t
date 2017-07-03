@@ -3,8 +3,8 @@
 use warnings;
 use strict;
 use File::Basename qw(dirname);
-use Test::More (tests => 13);
-use Descartes::Lib qw(refine_file_name get_share_dir);
+use Test::More (tests => 15);
+use Descartes::Lib qw(refine_file_name get_share_dir get_config);
 
 my $str;
 my $refined;
@@ -47,3 +47,7 @@ my @files = grep { $_ ne '.' && $_ ne '..'} readdir $dir_handle;
 closedir $dir_handle;
 my @tt_files = grep { m{[.]tt$} } @files;
 ok (@tt_files, join (', ', @tt_files) );
+
+my $config = get_config();
+ok($config, "get_config()");
+is(ref($config), "HASH", "config is hash");
