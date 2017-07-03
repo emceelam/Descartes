@@ -22,7 +22,7 @@ use Log::Any::Adapter ('Stdout');
 use Data::Dumper;
 
 use Descartes::MapMaker;
-use Descartes::Lib qw(refine_file_name get_config);
+use Descartes::Lib qw(refine_file_name get_config get_share_dir);
 
 pod2usage (-verbose => 1) if !@ARGV;
 
@@ -176,10 +176,10 @@ sub make_gallery {
       = round ((stat "$generated_dir/rendered/$hi_res_file")[7] / 1024);
   }
 
-  my $gallery_path =  abs_path ($gallery_dir);
-  my $descartes_dir = dirname(__FILE__);
+  my $gallery_path = abs_path ($gallery_dir);
+  my $share_dir    = get_share_dir();
   my $tt = Template->new ( {
-    INCLUDE_PATH => $descartes_dir,
+    INCLUDE_PATH => $share_dir,
     OUTPUT_PATH  => $gallery_path,
     STASH        => Template::Stash::AutoEscape->new(),
   } );

@@ -21,7 +21,7 @@ use Carp qw(croak);
 use Log::Any ();
 use Data::Dumper;
 
-use Descartes::Lib qw(refine_file_name get_config);
+use Descartes::Lib qw(refine_file_name get_config get_share_dir);
 
 has 'source_file' => (
   is       => 'ro',
@@ -82,6 +82,13 @@ has 'rendered_dir' => (
   builder => '_build_rendered_dir',
 );
 
+has 'share_dir' => (
+  is      => 'rw',
+  isa     => 'Str',
+  lazy    => 1,
+  builder => '_build_share_dir',
+);
+
 has 'target_file_ext' => (
   is      => 'ro',
   isa     => 'Str',
@@ -137,6 +144,10 @@ sub _build_rendered_dir {
   my ($self) = @_;
   my $base_dir = $self->base_dir;
   return "$base_dir/rendered",
+}
+
+sub _build_share_dir {
+  return get_share_dir();
 }
 
 sub _build_target_file_ext {
@@ -349,9 +360,10 @@ sub generate_html {
     if $info->{error};
   my ($mini_map_width, $mini_map_height) = dim($info);
 
+  my $share_dir = $self->share_dir;
   my $tt = Template->new (
-    INCLUDE_PATH => $self->descartes_dir,
-    STASH => Template::Stash::AutoEscape->new(),
+    INCLUDE_PATH => $share_dir,
+    STASH        => Template::Stash::AutoEscape->new(),
   );
   my %template_to_output = (
     'slippy_map.html.tt' => 'index.html',
@@ -373,7 +385,7 @@ sub generate_html {
           mini_map_height  => $mini_map_height,
         },
         "$base_dir/$output_file",
-    ) || die "$template_file: " . $tt->error() . "\n";
+    ) || die "$share_dir/$template_file: " . $tt->error() . "\n";
   }
 }
 

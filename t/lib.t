@@ -2,8 +2,9 @@
 
 use warnings;
 use strict;
-use Test::More (tests => 11);
-use Descartes::Lib qw(refine_file_name);
+use File::Basename qw(dirname);
+use Test::More (tests => 13);
+use Descartes::Lib qw(refine_file_name get_share_dir);
 
 my $str;
 my $refined;
@@ -36,3 +37,13 @@ is ($suffix, "jpg", $suffix);
 $refined = refine_file_name ($str);
 is ($refined, "gtasa-geographic-1.0", "single parameter scenario");
 
+my $t_dir = dirname(__FILE__);
+my $share_dir;
+$share_dir = get_share_dir();
+ok (-d $share_dir, "$share_dir");
+my $dir_handle;
+opendir $dir_handle, $share_dir;
+my @files = grep { $_ ne '.' && $_ ne '..'} readdir $dir_handle;
+closedir $dir_handle;
+my @tt_files = grep { m{[.]tt$} } @files;
+ok (@tt_files, join (', ', @tt_files) );

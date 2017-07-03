@@ -23,7 +23,9 @@ foreach my $test_img (qw(tandem-bike-riders.pdf teaparty.pdf)) {
   copy ($source, $dest);
   ok (-f $dest, "dest: $dest");
 }
-system "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
+my $cmd;
+$cmd = "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
+system $cmd;
 
 ok (opendir(my $dir_handle, $gallery_dir), "open $gallery_dir directory");
 my @all_files = readdir($dir_handle);
@@ -36,7 +38,7 @@ foreach my $graphic_file (@graphic_files)
 {
   $graphic_file =~ s/\.(.*?)$//;
   $graphic_file =~ s/[^a-zA-Z0-9.\-]/_/g;
-  ok (-d "$gallery_dir/$graphic_file", "$graphic_file directory exist");
+  ok (-d "$gallery_dir/$graphic_file", "$gallery_dir/$graphic_file directory exist");
 
   # Renders
   ok (opendir (my $rendered_dir_handle, "$gallery_dir/$graphic_file/rendered"),

@@ -5,12 +5,15 @@ require Exporter;
 @EXPORT_OK = qw (
   refine_file_name
   get_config
+  get_share_dir
 );
 
 use feature qw(state);
 use JSON;
+use Cwd qw(abs_path);
 use File::Slurp qw(read_file);
 use File::Basename qw(dirname);
+use File::ShareDir qw(dist_dir);
 use Data::Dumper;
 
 # break an image file name into parts and refine the parts
@@ -52,6 +55,18 @@ sub get_config {
     }
   }
   return $config;
+}
+
+sub get_share_dir {
+  my @files = qw(gallery.html.tt slippy_map.html.tt slippy_map.js.tt);
+  my $shared_dir = abs_path( dirname(__FILE__) . "/../../share" );
+  opendir my ($dir_handle), $shared_dir;
+  my @files = grep { m{[.]tt$} } readdir $dir_handle;
+  closedir $dir_handle;
+  return $shared_dir if @files;
+
+  $shared_dir = File::ShareDir::dist_dir('Descartes');
+  return $shared_dir;
 }
 
 1;
