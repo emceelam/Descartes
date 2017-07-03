@@ -42,7 +42,7 @@ sub get_config {
   state $config;
 
   if (!$config) {
-    my $dir = dirname(__FILE__);
+    my $dir = get_share_dir();
     my $json_text = read_file ("$dir/config.json");
     $config = JSON->new()->relaxed()->decode($json_text);
 
