@@ -18,7 +18,7 @@ use Carp qw(croak);
 use Math::Round qw(round);
 use Path::Class qw(dir file);
 use Log::Any ();
-use Log::Any::Adapter ('Stdout');
+use Log::Any::Adapter;
 use Data::Dumper;
 
 use Descartes::MapMaker;
@@ -51,7 +51,9 @@ GetOptions (
     },
 );
 
-$gen_parms{f_quiet} = $f_quiet if $f_quiet;
+if (!$f_quiet) {
+  Log::Any::Adapter->set('Stdout');
+}
 
 my $config = get_config();
 my $mini_map_max_width  = $config->{mini_map_max_width};
@@ -352,7 +354,7 @@ Print this help section
 
 =item --quiet value
 
-Currently unimplemented
+No output to stdout
 
 =back
 
