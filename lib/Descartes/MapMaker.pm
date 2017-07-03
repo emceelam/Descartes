@@ -480,7 +480,6 @@ sub generate {
   my $scale_and_files;
   my %p = validate ( @_, {
     scales   => { type => ARRAYREF, optional => 1 },
-    f_quiet  => { type => BOOLEAN,  default  => 0 },
     f_zip    => { type => BOOLEAN,  default  => 1 },
   } );
   my $config = $self->config;
