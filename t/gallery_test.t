@@ -24,7 +24,7 @@ foreach my $test_img (qw(tandem-bike-riders.pdf teaparty.pdf)) {
   ok (-f $dest, "dest: $dest");
 }
 my $cmd;
-$cmd = "perl $bin_dir/make_slippy_map.pl --scale='1' $gallery_dir >/dev/null 2>&1";
+$cmd = "perl $bin_dir/make_slippy_map --scale='1' $gallery_dir >/dev/null 2>&1";
 system $cmd;
 
 ok (opendir(my $dir_handle, $gallery_dir), "open $gallery_dir directory");
