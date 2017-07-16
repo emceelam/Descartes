@@ -73,8 +73,14 @@
         display: block;  /* fix for IE */
       }
     </style>
+    <script>
+      document.addEventListener(
+        "DOMContentLoaded",
+        function (event) { mapInit(); }
+      );
+    </script>
   </head>
-  <body onload="mapInit()">
+  <body>
 
     <div class="container-fluid">
 
