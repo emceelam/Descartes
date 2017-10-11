@@ -1,15 +1,8 @@
 package Descartes::Lib;
 
-require Exporter;
-@ISA = qw(Exporter);
-@EXPORT_OK = qw (
-  refine_file_name
-  get_config
-  get_share_dir
-);
-
 use warnings;
 use strict;
+
 use feature qw(state);
 use autodie qw(opendir closedir);
 use JSON;
@@ -18,6 +11,14 @@ use File::Slurp qw(read_file);
 use File::Basename qw(dirname);
 use File::ShareDir qw(dist_dir);
 use Data::Dumper;
+
+use base qw(Exporter);
+our @EXPORT_OK = qw (
+  refine_file_name
+  get_config
+  get_share_dir
+);
+
 
 # break an image file name into parts and refine the parts
 # the parts are used to create file names for generated ajax map data

@@ -16,7 +16,7 @@ use File::Touch qw(touch);
 use File::Basename qw(dirname);
 use Params::Validate qw(validate ARRAYREF BOOLEAN SCALAR);
 use Math::Round qw(round);
-use Cwd qw(cwd abs_path);
+use Cwd qw(chdir cwd abs_path);
 use Carp qw(croak);
 use Log::Any ();
 use Data::Dumper;
@@ -187,7 +187,6 @@ sub pdf_to_png {
   my $info;
   my @scale_and_files;
   my @renders;
-  my $scale;
   my %seen;
 
   my $render_and_files = $self->previous_scale_renders;
@@ -197,7 +196,7 @@ sub pdf_to_png {
 
   # render at different resolutions
   # at scale 100%, monitor resolution is 72dpi
-  foreach $scale (@unrendered_scales) {
+  foreach my $scale (@unrendered_scales) {
     my $dpi = round($scale * 72);
     my $command
       = "pdftoppm -png -r $dpi -cropbox $pdf_name $rendered_dir/$base_name";
@@ -258,6 +257,8 @@ sub create_scaled_down_image {
 
   $scaled_img->write (file => "$rendered_dir/$target")
     || die "Could not write $rendered_dir/$target: " . $scaled_img->errstr . "\n";
+
+  return;
 }
 
 sub create_hi_res {
@@ -265,6 +266,8 @@ sub create_hi_res {
   my $rendered_dir = $self->rendered_dir;
   link $file_name, "$rendered_dir/hi_res" ||
     croak "could not link";
+
+  return;
 }
 
 sub create_low_res {
@@ -289,6 +292,8 @@ sub create_low_res {
                      type=>'min');
   $scaled_img->write (file => "$rendered_dir/$low_res_name")
     || die "Could not write low res: " . $img->errstr . "\n";
+
+  return;
 }
 
 sub tile_image {
@@ -338,6 +343,8 @@ sub tile_image {
   }
   touch($scale_dir);
   $log->info("Total tiles written: $tile_cnt");
+
+  return;
 }
 
 sub generate_html {
@@ -387,6 +394,8 @@ sub generate_html {
         "$base_dir/$output_file",
     ) || die "$share_dir/$template_file: " . $tt->error() . "\n";
   }
+
+  return;
 }
 
 sub zip_files {
@@ -413,11 +422,13 @@ sub zip_files {
     $base_dir
   );
   $zip->addFile("$base_dir/rendered/mini_map.png");
-  unless ($zip->writeToFileNamed("$base_dir/$base_name.zip") == AZ_OK) {
+  if ($zip->writeToFileNamed("$base_dir/$base_name.zip") != AZ_OK) {
     croak "$base_name.zip write error";
   }
 
   chdir $cwd;  # back to the original directory
+
+  return;
 }
 
 # scale a raster image, save the scaled images
@@ -434,7 +445,6 @@ sub scale_raster_image {
   my $file_ext     = $self->target_file_ext;
   my $log          = $self->log;
   my ($width, $height);
-  my $scale;
   my @scale_and_files;
   my $dest_file_name;
 
@@ -452,7 +462,7 @@ sub scale_raster_image {
            $img->errstr() . "\n";
   }
 
-  foreach $scale (@unrendered_scales) {
+  foreach my $scale (@unrendered_scales) {
     my $scaled_img = $img->scale(scalefactor => $scale);
     ($width, $height) = ($scaled_img->getwidth(), $scaled_img->getheight());
     $dest_file_name = "w${width}_h${height}_scale"
@@ -476,13 +486,14 @@ sub scale_raster_image {
 
 sub generate {
   my $self = shift;
-  my @file_names;
-  my $scale_and_files;
   my %p = validate ( @_, {
     scales   => { type => ARRAYREF, optional => 1 },
     f_zip    => { type => BOOLEAN,  default  => 1 },
   } );
   my $config = $self->config;
+
+  my @file_names;
+  my $scale_and_files;
   my $thumbnail_name       = $config->{thumbnail_name};
   my $thumbnail_max_width  = $config->{thumbnail_max_width};
   my $thumbnail_max_height = $config->{thumbnail_max_height};
