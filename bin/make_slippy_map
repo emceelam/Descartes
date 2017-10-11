@@ -135,7 +135,7 @@ sub make_gallery {
       source_file => "$gallery_dir/$graphic_file",
       dest_dir    => $gallery_dir,
     );
-    my $image_dir = $map_maker->generate(@gen_parms, f_zip => 0);
+    my $image_dir = $map_maker->generate(@gen_parms);
     my $generated_dir = "$gallery_dir/$image_dir";
     my $url_dir = $url_root ? "$url_root/$image_dir" : $image_dir;
 
