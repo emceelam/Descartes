@@ -251,9 +251,10 @@ sub create_scaled_down_image {
   $img->read (file => "$rendered_dir/$file_name")
     || die "Could not read $rendered_dir/$file_name: " . $img->errstr . "\n";
   my $scaled_img = $img->scale (
-                     xpixels => $p{max_width}, 
-                     ypixels => $p{max_height},
-                     type=>'min');
+    xpixels => $p{max_width},
+    ypixels => $p{max_height},
+    type    => 'min',
+  );
 
   $scaled_img->write (file => "$rendered_dir/$target")
     || die "Could not write $rendered_dir/$target: " . $scaled_img->errstr . "\n";
@@ -329,8 +330,11 @@ sub tile_image {
   for   (my $y=0; $y < $max_y; $y++) {
     for (my $x=0; $x < $max_x;  $x++) {
       my $tile_img = $img->crop (
-                       left => $x * $tile_size, top => $y * $tile_size,
-                       width=> $tile_size, height => $tile_size);
+        left   => $x * $tile_size,
+        top    => $y * $tile_size,
+        width  => $tile_size,
+        height => $tile_size,
+      );
       my $tile_name =
         "$scale_dir/x$x" . "y$y" . ".$file_ext";
       $tile_img->write (file => $tile_name)
