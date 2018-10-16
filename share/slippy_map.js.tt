@@ -1,3 +1,7 @@
+document.addEventListener(
+  "DOMContentLoaded",
+  mapInit
+);
 
 function mapInit() {
   var magnifier = Singleton.getMagnifier();
